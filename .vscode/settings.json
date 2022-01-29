@@ -3,9 +3,11 @@
   "deno.lint": true,
   "deno.unstable": true,
   "[typescript]": {
-    "editor.defaultFormatter": "denoland.vscode-deno"
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.tabSize": 2
   },
   "[javascript]": {
-    "editor.defaultFormatter": "denoland.vscode-deno"
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.tabSize": 2
   }
 }
