@@ -1,0 +1,6 @@
+{
+  "tasks": {
+    "test": "deno run -A --unstable --no-check ./test/test.ts",
+    "test-appkit": "deno run -A --unstable --no-check ./test/appkit.ts"
+  }
+}
