@@ -1,6 +1,6 @@
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime
 const lib = Deno.dlopen(
-  "libobjc.dylib",
+  Deno.build.os === "windows" ? "objc.dll" : "libobjc.dylib",
   {
     // Working with Classes
 
@@ -167,10 +167,10 @@ const lib = Deno.dlopen(
       result: "void",
     },
 
-    objc_duplicateClass: {
+    /*objc_duplicateClass: {
       parameters: ["pointer", "pointer", "isize"],
       result: "pointer",
-    },
+    },*/
 
     // Working with Instances
 
@@ -312,10 +312,10 @@ const lib = Deno.dlopen(
       result: "void",
     },
 
-    method_getDescription: {
+    /*method_getDescription: {
       parameters: ["pointer"],
       result: "pointer",
-    },
+    },*/
 
     method_setImplementation: {
       parameters: ["pointer", "pointer"],
@@ -329,20 +329,20 @@ const lib = Deno.dlopen(
 
     // Working with Libraries
 
-    objc_copyImageNames: {
+    /*objc_copyImageNames: {
       parameters: ["pointer"],
       result: "pointer",
-    },
+    },*/
 
-    class_getImageName: {
+    /*class_getImageName: {
       parameters: ["pointer"],
       result: "pointer",
-    },
+    },*/
 
-    objc_copyClassNamesForImage: {
+    /*objc_copyClassNamesForImage: {
       parameters: ["pointer", "pointer"],
       result: "pointer",
-    },
+    },*/
 
     // Working with Selectors
 
@@ -467,7 +467,7 @@ const lib = Deno.dlopen(
 
     // Using Objective-C Language Features
 
-    objc_enumerationMutation: {
+    /*objc_enumerationMutation: {
       parameters: ["pointer"],
       result: "void",
     },
@@ -475,7 +475,7 @@ const lib = Deno.dlopen(
     objc_setEnumerationMutationHandler: {
       parameters: ["pointer"],
       result: "void",
-    },
+    },*/
 
     imp_implementationWithBlock: {
       parameters: ["pointer"],
@@ -506,13 +506,13 @@ const lib = Deno.dlopen(
       type: "pointer",
     },
 
-    objc_msgSendSuper: {
+    /*objc_msgSendSuper: {
       type: "pointer",
-    },
+    },*/
   } as const,
 );
 
 // Load Foundation by default.
-Deno.dlopen("/System/Library/Frameworks/Foundation.framework/Foundation", {});
+if (Deno.build.os === "darwin") Deno.dlopen("/System/Library/Frameworks/Foundation.framework/Foundation", {});
 
 export default lib.symbols;
