@@ -505,7 +505,6 @@ const lib = Deno.dlopen(
     objc_msgSend: {
       type: "pointer",
     },
-
     /*objc_msgSendSuper: {
       type: "pointer",
     },*/
@@ -513,6 +512,8 @@ const lib = Deno.dlopen(
 );
 
 // Load Foundation by default.
-if (Deno.build.os === "darwin") Deno.dlopen("/System/Library/Frameworks/Foundation.framework/Foundation", {});
+if (Deno.build.os === "darwin") {
+  Deno.dlopen("/System/Library/Frameworks/Foundation.framework/Foundation", {});
+}
 
 export default lib.symbols;
