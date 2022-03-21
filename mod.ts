@@ -1,8 +1,9 @@
-import { objc } from "./src/objc.ts";
+import { ObjC } from "./src/objc.ts";
 
-export default objc;
+export default ObjC;
 export { default as sys } from "./src/bindings.ts";
 export * from "./src/class.ts";
+export * from "./src/encoding.ts";
 export * from "./src/imp.ts";
 export * from "./src/ivar.ts";
 export * from "./src/method.ts";

@@ -1,6 +1,14 @@
 {
   "tasks": {
     "test": "deno run -A --unstable --no-check ./test/test.ts",
-    "test-appkit": "deno run -A --unstable --no-check ./test/appkit.ts"
+    "test-appkit": "deno run -A --unstable --no-check ./test/appkit.ts",
+    "test-encoding": "deno test -A --unstable --no-check ./test/encoding.ts"
+  },
+  "lint": {
+    "rules": {
+      "exclude": [
+        "no-explicit-any"
+      ]
+    }
   }
 }

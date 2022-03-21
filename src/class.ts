@@ -37,14 +37,20 @@ export class Class {
     return sys.class_getInstanceSize(this[_handle]);
   }
 
-  get imageName() {
-    const ptr = sys.class_getImageName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
-  }
+  // get imageName() {
+  //   const ptr = sys.class_getImageName(this[_handle]);
+  //   const ptrView = new Deno.UnsafePointerView(ptr);
+  //   return ptrView.getCString();
+  // }
 
   getInstanceMethod(sel: Sel) {
     const ptr = sys.class_getInstanceMethod(this[_handle], sel[_handle]);
+    if (ptr.value === 0n) return undefined;
+    else return new Method(ptr);
+  }
+
+  getClassMethod(sel: Sel) {
+    const ptr = sys.class_getClassMethod(this[_handle], sel[_handle]);
     if (ptr.value === 0n) return undefined;
     else return new Method(ptr);
   }

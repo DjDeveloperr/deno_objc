@@ -1,6 +1,10 @@
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime
 const lib = Deno.dlopen(
-  Deno.build.os === "windows" ? "objc.dll" : "libobjc.dylib",
+  Deno.build.os === "windows"
+    ? "objc.dll"
+    : Deno.build.os === "linux"
+    ? "libobjc.so"
+    : "libobjc.dylib",
   {
     // Working with Classes
 

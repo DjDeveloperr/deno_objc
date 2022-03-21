@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 import sys from "./bindings.ts";
 import { Class } from "./class.ts";
 import { prepare } from "./message.ts";
@@ -6,22 +5,18 @@ import { Sel } from "./sel.ts";
 import { _handle, toCString } from "./util.ts";
 
 export class ObjC {
-  readonly classes: Record<string, Class>;
+  static readonly classes: Record<string, Class> = new Proxy({}, {
+    get: (_, name) => {
+      if (typeof name === "symbol") return;
+      return ObjC.getClass(name);
+    },
+  });
 
-  constructor() {
-    this.classes = new Proxy({}, {
-      get: (_, name) => {
-        if (typeof name === "symbol") return;
-        return this.getClass(name);
-      },
-    });
-  }
-
-  get classCount() {
+  static get classCount() {
     return sys.objc_getClassList(null, 0);
   }
 
-  get classList() {
+  static get classList() {
     const outCount = new Uint32Array(1);
     const classPtrs = new Deno.UnsafePointerView(
       sys.objc_copyClassList(outCount),
@@ -34,26 +29,27 @@ export class ObjC {
     return classes;
   }
 
-  getClass(name: string) {
+  static getClass(name: string): Class | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getClass(nameCstr);
+    if (classPtr.value === 0n) return undefined;
     return new Class(classPtr);
   }
 
-  get imageNames() {
-    const outCount = new Uint32Array(1);
-    const imageNames = new Array<string>();
-    const imagePtrs = new Deno.UnsafePointerView(
-      sys.objc_copyImageNames(outCount),
-    );
-    for (let i = 0; i < outCount[0]; i++) {
-      const ptr = new Deno.UnsafePointer(imagePtrs.getBigUint64(i * 8));
-      imageNames.push(new Deno.UnsafePointerView(ptr).getCString());
-    }
-    return imageNames;
-  }
+  // static get imageNames() {
+  //   const outCount = new Uint32Array(1);
+  //   const imageNames = new Array<string>();
+  //   const imagePtrs = new Deno.UnsafePointerView(
+  //     sys.objc_copyImageNames(outCount),
+  //   );
+  //   for (let i = 0; i < outCount[0]; i++) {
+  //     const ptr = new Deno.UnsafePointer(imagePtrs.getBigUint64(i * 8));
+  //     imageNames.push(new Deno.UnsafePointerView(ptr).getCString());
+  //   }
+  //   return imageNames;
+  // }
 
-  msgSend(
+  static msgSend(
     obj: any,
     selector: string,
     ...args: any[]
@@ -73,10 +69,6 @@ export class ObjC {
     ];
     return (fn.call as any)(...cargs) as Deno.UnsafePointer;
   }
-
-  sel(name: string) {
-    return Sel.register(name);
-  }
 }
 
-export const objc = new ObjC();
+export default ObjC;

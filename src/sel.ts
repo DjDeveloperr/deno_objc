@@ -4,8 +4,10 @@ import { _handle, toCString } from "./util.ts";
 export class Sel {
   [_handle]: Deno.UnsafePointer;
 
-  constructor(handle: Deno.UnsafePointer) {
-    this[_handle] = handle;
+  constructor(handle: Deno.UnsafePointer | string) {
+    this[_handle] = handle instanceof Deno.UnsafePointer
+      ? handle
+      : Sel.register(handle)[_handle];
   }
 
   static register(name: string) {
@@ -27,5 +29,9 @@ export class Sel {
 
   equals(other: Sel) {
     return sys.sel_isEqual(this[_handle], other[_handle]);
+  }
+
+  [Symbol.for("Deno.customInspect")]() {
+    return `Sel(${this.name})`;
   }
 }
