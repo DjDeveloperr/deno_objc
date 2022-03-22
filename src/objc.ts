@@ -100,6 +100,8 @@ export class ObjC {
       } as const,
     );
 
+    console.log(objclass, sel, argDefs, retDef);
+
     const cargs = [
       obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
       sel[_handle],
