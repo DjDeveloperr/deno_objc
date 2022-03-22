@@ -14,13 +14,23 @@ import { fromFileUrl } from "../deps.ts";
 
 export function createProxy(self: Class | CObject) {
   // const objclass = self instanceof Class ? self : self.class;
-  return new Proxy(self, {
+  const proxy: any = new Proxy(self, {
     get(target, prop) {
       if (typeof prop === "symbol") {
         if (prop === _proxied) {
           return self;
-        }
-        return (target as any)[prop];
+        } else if (prop.description === "Deno.customInspect") {
+          return () => {
+            try {
+              const desc = proxy.description();
+              return desc.UTF8String();
+            } catch (_) {
+              return self instanceof Class
+                ? `[class ${self.name}]`
+                : `[object ${self.className}]`;
+            }
+          };
+        } else return (target as any)[prop];
       } else {
         return (...args: any[]) => {
           let name: string = prop;
@@ -51,6 +61,7 @@ export function createProxy(self: Class | CObject) {
       }
     },
   });
+  return proxy;
 }
 
 export class ObjC {
