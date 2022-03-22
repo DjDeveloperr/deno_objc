@@ -9,13 +9,47 @@ import {
 } from "./encoding.ts";
 import { CObject } from "./object.ts";
 import { Sel } from "./sel.ts";
-import { _handle, toCString } from "./util.ts";
+import { _handle, _proxied, toCString } from "./util.ts";
+
+export function createProxy(self: Class | CObject) {
+  const objclass = self instanceof Class ? self : self.class;
+  return new Proxy(self, {
+    get(target, prop) {
+      if (typeof prop === "symbol") {
+        if (prop === _proxied) {
+          return self;
+        }
+        return (target as any)[prop];
+      } else {
+        const sel = new Sel(prop);
+        if (objclass.respondsTo(sel)) {
+          return (...args: any[]) => {
+            const result = ObjC.msgSend(target, sel, ...args);
+            if (result instanceof Class || result instanceof CObject) {
+              return createProxy(result);
+            } else {
+              return result;
+            }
+          };
+        }
+      }
+    },
+    set(_target, _prop, _value) {
+      return false;
+    },
+    has(_target, _prop) {
+      return false;
+    },
+  });
+}
 
 export class ObjC {
-  static readonly classes: Record<string, Class> = new Proxy({}, {
+  static readonly classes: Record<string, any> = new Proxy({}, {
     get: (_, name) => {
       if (typeof name === "symbol") return;
-      return ObjC.getClass(name);
+      const cls = ObjC.getClass(name);
+      if (!cls) return;
+      else return createProxy(cls);
     },
   });
 
@@ -57,11 +91,14 @@ export class ObjC {
   // }
 
   static msgSend<T = any>(
-    obj: Class | CObject,
-    selector: string | Deno.UnsafePointer,
+    obj: any,
+    selector: string | Deno.UnsafePointer | Sel,
     ...args: any[]
   ): T {
     const sel = new Sel(selector);
+    if (obj[_proxied]) {
+      obj = obj[_proxied];
+    }
     const objptr = obj instanceof Deno.UnsafePointer ? obj : obj[_handle];
     const objclass = obj instanceof Class
       ? obj
@@ -108,9 +145,11 @@ export class ObjC {
       ...args.map((e, i) => toNative(argDefs[i + 2], e)),
     ];
 
-    console.log(objclass.name, sel.name, argDefs, retDef, fn.definition, cargs);
-
     return fromNative(retDef, (fn.call as any)(...cargs));
+  }
+
+  static [Symbol.for("Deno.customInspect")]() {
+    return `ObjC { ${ObjC.classCount} classes }`;
   }
 }
 

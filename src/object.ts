@@ -1,4 +1,5 @@
 import sys from "./bindings.ts";
+import { Class } from "./class.ts";
 import { _handle } from "./util.ts";
 
 export class CObject {
@@ -12,6 +13,10 @@ export class CObject {
     const ptr = sys.object_getClassName(this[_handle]);
     const ptrView = new Deno.UnsafePointerView(ptr);
     return ptrView.getCString();
+  }
+
+  get class() {
+    return new Class(sys.object_getClass(this[_handle]));
   }
 
   [Symbol.for("Deno.customInspect")]() {
