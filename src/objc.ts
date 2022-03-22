@@ -20,6 +20,57 @@ function toJS(c: any) {
   }
 }
 
+export function createMethodProxy(self: Class | CObject, name: string) {
+  return new Proxy(() => {}, {
+    apply(_target, _self, args) {
+      if (name.includes("_") && args.length > 0) {
+        name = name.replaceAll("_", ":");
+      }
+      if (args.length > 0 && !name.endsWith(":")) {
+        name += ":";
+      }
+
+      return toJS(ObjC.msgSend(self, name, ...args));
+    },
+
+    get(target: any, prop) {
+      if (typeof prop === "symbol") {
+        if (prop.description === "Deno.customInspect") {
+          return () => {
+            const objclass = self instanceof Class ? self : self.class;
+            let sel = new Sel(name.replaceAll("_", ":"));
+            let method = self instanceof Class
+              ? objclass.getClassMethod(sel)
+              : objclass.getInstanceMethod(sel);
+            if (!method) {
+              sel = new Sel(name.replaceAll("_", ":") + ":");
+              method = self instanceof Class
+                ? objclass.getClassMethod(sel)
+                : objclass.getInstanceMethod(sel);
+            }
+            if (!method) return `[method nil]`;
+            const parts = sel.name.split(":");
+            let args = "";
+            for (let i = 0; i < parts.length - 1; i++) {
+              const part = parts[i];
+              args += `${part}:${method.getArgumentType(i)} `;
+            }
+            return `${
+              self instanceof Class
+                ? `+ ${method.returnType} [${self.name}`
+                : `- ${method.returnType} [${self.className}`
+            } ${args.trim()}]`;
+          };
+        } else {
+          return target[prop];
+        }
+      } else {
+        return target[prop];
+      }
+    },
+  });
+}
+
 export function createProxy(self: Class | CObject) {
   // const objclass = self instanceof Class ? self : self.class;
   const proxy: any = new Proxy(self, {
@@ -40,17 +91,7 @@ export function createProxy(self: Class | CObject) {
           };
         } else return (target as any)[prop];
       } else {
-        return (...args: any[]) => {
-          let name: string = prop;
-          if (name.includes("_") && args.length > 0) {
-            name = name.replaceAll("_", ":");
-          }
-          if (args.length > 0 && !name.endsWith(":")) {
-            name += ":";
-          }
-
-          return toJS(ObjC.msgSend(target, name, ...args));
-        };
+        return createMethodProxy(self, prop);
       }
     },
     set(_target, _prop, _value) {
