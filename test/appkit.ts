@@ -27,4 +27,4 @@ console.log(window);
 window.setBackgroundColor(NSColor.blueColor());
 window.makeKeyAndOrderFront(app);
 
-console.log("Done!");
+console.log(window.frame());
