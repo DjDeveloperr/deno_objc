@@ -105,7 +105,10 @@ export class ObjC {
     const cargs = [
       obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
       sel[_handle],
-      ...args.map((e, i) => toNative(e, argDefs[i + 2])),
+      ...args.map((e, i) => {
+        console.log("arg", i, e, argDefs[i + 2]);
+        return toNative(e, argDefs[i + 2]);
+      }),
     ];
 
     return fromNative((fn.call as any)(...cargs), retDef);
