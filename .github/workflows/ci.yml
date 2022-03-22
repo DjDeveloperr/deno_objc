@@ -37,8 +37,11 @@ jobs:
         with:
           deno-version: 'v1.x'
 
-      - name: Test
+      - name: Test Basic
         run: deno task test
+
+      - name: Test Encoding
+        run: deno task test-encoding
 
       - name: Test AppKit
         run: deno task test-appkit
