@@ -6,6 +6,7 @@ const {
 } = objc.classes;
 
 const date = objc.msgSend(NSDate, "date");
+console.log(date);
 const dateFormatter = objc.msgSend(
   NSDateFormatter,
   "localizedStringFromDate:dateStyle:timeStyle:",
