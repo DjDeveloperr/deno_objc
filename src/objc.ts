@@ -176,7 +176,17 @@ export class ObjC {
       }),
     ];
 
-    return fromNative(retDef, (fn.call as any)(...cargs));
+    const result = fromNative(retDef, (fn.call as any)(...cargs));
+
+    if (retDef.type === "id" && result) {
+      try {
+        return result.UTF8String();
+      } catch (_) {
+        return result;
+      }
+    } else {
+      return result;
+    }
   }
 
   static import(path: string | URL) {
