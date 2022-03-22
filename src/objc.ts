@@ -12,6 +12,14 @@ import { Sel } from "./sel.ts";
 import { _handle, _proxied, toCString } from "./util.ts";
 import { fromFileUrl } from "../deps.ts";
 
+function toJS(c: any) {
+  if (c instanceof Class || c instanceof CObject) {
+    return createProxy(c);
+  } else {
+    return c;
+  }
+}
+
 export function createProxy(self: Class | CObject) {
   // const objclass = self instanceof Class ? self : self.class;
   const proxy: any = new Proxy(self, {
@@ -41,12 +49,7 @@ export function createProxy(self: Class | CObject) {
             name += ":";
           }
 
-          const result = ObjC.msgSend(target, name, ...args);
-          if (result instanceof Class || result instanceof CObject) {
-            return createProxy(result);
-          } else {
-            return result;
-          }
+          return toJS(ObjC.msgSend(target, name, ...args));
         };
       }
     },
@@ -176,23 +179,7 @@ export class ObjC {
       }),
     ];
 
-    let result = fromNative(retDef, (fn.call as any)(...cargs));
-
-    if (result) {
-      if (result instanceof Class || result instanceof CObject) {
-        result = createProxy(result);
-      }
-    }
-
-    if (retDef.type === "id" && result) {
-      try {
-        return result.UTF8String();
-      } catch (_) {
-        return result;
-      }
-    } else {
-      return result;
-    }
+    return fromNative(retDef, (fn.call as any)(...cargs));
   }
 
   static import(path: string | URL) {
@@ -215,6 +202,10 @@ export class ObjC {
 
   static [Symbol.for("Deno.customInspect")]() {
     return `ObjC { ${ObjC.classCount} classes }`;
+  }
+
+  static send(template: TemplateStringsArray, ...args: any[]) {
+    return ObjC.msgSend(this, template.map((e) => e.trim()).join(""), ...args);
   }
 }
 
