@@ -171,7 +171,7 @@ export class ObjC {
     ObjC.#NSString = ObjC.#NSString ?? ObjC.classes.NSString;
     ObjC.#NSBundle = ObjC.#NSBundle ?? ObjC.classes.NSBundle;
 
-    const nspath = ObjC.#NSString.stringWithString(path);
+    const nspath = ObjC.#NSString.stringWithUTF8String(path);
     const bundle = ObjC.#NSBundle.bundleWithPath(nspath);
     if (!bundle) {
       throw new Error(`Could not load bundle at ${path}`);
