@@ -8,7 +8,7 @@ const {
 } = objc.classes;
 
 const app = NSApplication.sharedApplication();
-app.setActivationPolicy("NSApplicationActivationPolicyRegular");
+app.setActivationPolicy(0);
 
 const rect = new Float64Array([0, 0, 800, 600]);
 
