@@ -230,8 +230,17 @@ class CTypeParser {
       case UNKNOWN:
         return { type: "unknown" };
 
+      case "r":
+      case "n":
+      case "N":
+      case "o":
+      case "O":
+      case "R":
+      case "v":
+        return this.parse();
+
       default:
-        throw new Error(`Unexpected character: ${char}`);
+        throw new Error(`Unexpected character: '${char}' in '${this.source}'`);
     }
   }
 }
@@ -344,11 +353,15 @@ export function toNative(enc: CTypeInfo, v: any) {
         v === null || v instanceof Deno.UnsafePointer || isArrayBufferView(v)
       ) {
         return v;
-      } else if (typeof v === "object" && v !== null && _handle in v) {
+      } else if (enc.type === "sel" && typeof v === "string") {
+        return new Sel(v)[_handle];
+      } else if (typeof v === "object" && _handle in v) {
         return v[_handle];
       } else {
         throw new Error(
-          `Cannot map ${Deno.inspect(v)} to Native Value of encoding ${enc}`,
+          `Cannot map ${Deno.inspect(v)} to Native Value of encoding ${
+            Deno.inspect(enc)
+          }`,
         );
       }
     }

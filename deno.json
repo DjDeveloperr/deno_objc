@@ -2,6 +2,7 @@
   "tasks": {
     "test": "deno run -A --unstable --no-check ./test/test.ts",
     "test-appkit": "deno run -A --unstable --no-check ./test/appkit.ts",
+    "test-pasteboard": "deno test -A --unstable --no-check ./test/pasteboard.ts",
     "test-encoding": "deno test -A --unstable --no-check ./test/encoding.ts"
   },
   "lint": {

@@ -4,9 +4,11 @@ import { _handle, toCString } from "./util.ts";
 export class Sel {
   [_handle]: Deno.UnsafePointer;
 
-  constructor(handle: Deno.UnsafePointer | string) {
+  constructor(handle: Deno.UnsafePointer | string | Sel) {
     this[_handle] = handle instanceof Deno.UnsafePointer
       ? handle
+      : handle instanceof Sel
+      ? handle[_handle]
       : Sel.register(handle)[_handle];
   }
 
@@ -32,6 +34,6 @@ export class Sel {
   }
 
   [Symbol.for("Deno.customInspect")]() {
-    return `Sel(${this.name})`;
+    return `[sel ${this.name}]`;
   }
 }

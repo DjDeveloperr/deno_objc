@@ -1,4 +1,5 @@
 export const _handle = Symbol("[[objc_handle]]");
+export const _proxied = Symbol("[[objc_proxied]]");
 
 export function toCString(str: string) {
   const encoded = new TextEncoder().encode(str);
