@@ -353,6 +353,8 @@ export function toNative(enc: CTypeInfo, v: any) {
         v === null || v instanceof Deno.UnsafePointer || isArrayBufferView(v)
       ) {
         return v;
+      } else if (enc.type === "sel" && typeof v === "string") {
+        return new Sel(v)[_handle];
       } else if (typeof v === "object" && _handle in v) {
         return v[_handle];
       } else {
@@ -367,8 +369,6 @@ export function toNative(enc: CTypeInfo, v: any) {
 }
 
 export function fromNative(enc: CTypeInfo, v: any) {
-  console.log("fromNative", enc, v);
-
   switch (enc.type) {
     case "char": // u8
       return String.fromCharCode(v);

@@ -10,6 +10,7 @@ import {
 import { CObject } from "./object.ts";
 import { Sel } from "./sel.ts";
 import { _handle, _proxied, toCString } from "./util.ts";
+import { fromFileUrl } from "../deps.ts";
 
 export function createProxy(self: Class | CObject) {
   // const objclass = self instanceof Class ? self : self.class;
@@ -155,6 +156,24 @@ export class ObjC {
     ];
 
     return fromNative(retDef, (fn.call as any)(...cargs));
+  }
+
+  static #NSBundle: any;
+
+  static import(path: string | URL) {
+    if (path instanceof URL) {
+      path = fromFileUrl(path);
+    } else if (!path.startsWith("/")) {
+      path = `/System/Library/Frameworks/${path}.framework/${path}`;
+    }
+    ObjC.#NSBundle = ObjC.#NSBundle ?? ObjC.classes.NSBundle;
+    const bundle = ObjC.#NSBundle.bundleWithPath(path);
+    if (!bundle) {
+      throw new Error(`Could not load bundle at ${path}`);
+    }
+    if (!bundle.load()) {
+      throw new Error(`Failed to load bundle at ${path}`);
+    }
   }
 
   static [Symbol.for("Deno.customInspect")]() {

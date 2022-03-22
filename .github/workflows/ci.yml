@@ -39,3 +39,6 @@ jobs:
 
       - name: Test
         run: deno task test
+
+      - name: Test AppKit
+        run: deno task test-appkit
