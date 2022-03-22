@@ -166,6 +166,8 @@ export class ObjC {
       ...args.map((e, i) => toNative(argDefs[i + 2], e)),
     ];
 
+    console.log(obj, sel, method, argDefs, retDef, cargs);
+
     return fromNative(retDef, (fn.call as any)(...cargs));
   }
 
