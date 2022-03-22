@@ -30,7 +30,7 @@ export function createProxy(self: Class | CObject) {
             name += ":";
           }
 
-          const result = ObjC.msgSend(target, prop, ...args);
+          const result = ObjC.msgSend(target, name, ...args);
           if (result instanceof Class || result instanceof CObject) {
             return createProxy(result);
           } else {
