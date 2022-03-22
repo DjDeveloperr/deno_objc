@@ -52,12 +52,9 @@ export function createMethodProxy(self: Class | CObject, name: string) {
             const parts = sel.name.split(":");
             let args = "";
             for (let i = 0; i < parts.length; i++) {
-              const part = parts[i];
-              args += `${part}:${
-                (i + 2 >= method.argumentCount)
-                  ? "OOB"
-                  : method.getArgumentType(i + 2)
-              } `;
+              const part = parts[i].trim();
+              if (part === "") continue;
+              args += `${part}:${method.getArgumentType(i + 2)} `;
             }
             return `${
               self instanceof Class
