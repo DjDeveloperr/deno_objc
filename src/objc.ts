@@ -24,7 +24,7 @@ export function createProxy(self: Class | CObject) {
         return (...args: any[]) => {
           let name: string = prop;
           if (name.includes("_") && args.length > 0) {
-            name = name.replace("_", ":");
+            name = name.replaceAll("_", ":");
           }
           if (args.length > 0 && !name.endsWith(":")) {
             name += ":";
