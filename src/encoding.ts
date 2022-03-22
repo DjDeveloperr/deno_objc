@@ -230,8 +230,17 @@ class CTypeParser {
       case UNKNOWN:
         return { type: "unknown" };
 
+      case "r":
+      case "n":
+      case "N":
+      case "o":
+      case "O":
+      case "R":
+      case "v":
+        return this.parse();
+
       default:
-        throw new Error(`Unexpected character: ${char}`);
+        throw new Error(`Unexpected character: '${char}' in '${this.source}'`);
     }
   }
 }
