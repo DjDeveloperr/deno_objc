@@ -32,6 +32,6 @@ export class Sel {
   }
 
   [Symbol.for("Deno.customInspect")]() {
-    return `Sel(${this.name})`;
+    return `[sel ${this.name}]`;
   }
 }
