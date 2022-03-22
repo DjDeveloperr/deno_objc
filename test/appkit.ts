@@ -5,6 +5,7 @@ objc.import("AppKit");
 const {
   NSApplication,
   NSWindow,
+  NSColor,
 } = objc.classes;
 
 const app = NSApplication.sharedApplication();
@@ -22,3 +23,8 @@ const window = NSWindow
   );
 
 console.log(window);
+
+window.setBackgroundColor(NSColor.blueColor());
+window.makeKeyAndOrderFront(app);
+
+console.log("Done!");
