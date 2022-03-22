@@ -56,11 +56,11 @@ export class ObjC {
   //   return imageNames;
   // }
 
-  static msgSend(
+  static msgSend<T = any>(
     obj: Class | CObject,
     selector: string | Deno.UnsafePointer,
     ...args: any[]
-  ): any {
+  ): T {
     const sel = new Sel(selector);
     const objptr = obj instanceof Deno.UnsafePointer ? obj : obj[_handle];
     const objclass = new Class(objptr);
@@ -100,15 +100,13 @@ export class ObjC {
       } as const,
     );
 
-    console.log(objclass.name, sel.name, argDefs, retDef, fn.definition);
-
     const cargs = [
       obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
       sel[_handle],
       ...args.map((e, i) => toNative(argDefs[i + 2], e)),
     ];
 
-    return fromNative((fn.call as any)(...cargs), retDef);
+    return fromNative(retDef, (fn.call as any)(...cargs));
   }
 }
 
