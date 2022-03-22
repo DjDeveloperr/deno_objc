@@ -35,8 +35,12 @@ export function createProxy(self: Class | CObject) {
     set(_target, _prop, _value) {
       return false;
     },
-    has(_target, _prop) {
-      return false;
+    has(target, prop) {
+      if (typeof prop === "symbol") {
+        return prop in target;
+      } else {
+        return false;
+      }
     },
   });
 }

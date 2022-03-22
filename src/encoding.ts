@@ -357,9 +357,9 @@ export function toNative(enc: CTypeInfo, v: any) {
         return v[_handle];
       } else {
         throw new Error(
-          `Cannot map ${Deno.inspect(v)} (${typeof v} ${
-            _handle in v
-          }) to Native Value of encoding ${Deno.inspect(enc)}`,
+          `Cannot map ${Deno.inspect(v)} to Native Value of encoding ${
+            Deno.inspect(enc)
+          }`,
         );
       }
     }
