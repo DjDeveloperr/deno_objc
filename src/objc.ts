@@ -12,7 +12,7 @@ import { Sel } from "./sel.ts";
 import { _handle, _proxied, toCString } from "./util.ts";
 
 export function createProxy(self: Class | CObject) {
-  const objclass = self instanceof Class ? self : self.class;
+  // const objclass = self instanceof Class ? self : self.class;
   return new Proxy(self, {
     get(target, prop) {
       if (typeof prop === "symbol") {
@@ -22,18 +22,14 @@ export function createProxy(self: Class | CObject) {
         return (target as any)[prop];
       } else {
         const sel = new Sel(prop);
-        if (objclass.respondsTo(sel)) {
-          return (...args: any[]) => {
-            const result = ObjC.msgSend(target, sel, ...args);
-            if (result instanceof Class || result instanceof CObject) {
-              return createProxy(result);
-            } else {
-              return result;
-            }
-          };
-        } else {
-          throw new Error(`${objclass.name} does not respond to ${prop}`);
-        }
+        return (...args: any[]) => {
+          const result = ObjC.msgSend(target, sel, ...args);
+          if (result instanceof Class || result instanceof CObject) {
+            return createProxy(result);
+          } else {
+            return result;
+          }
+        };
       }
     },
     set(_target, _prop, _value) {
