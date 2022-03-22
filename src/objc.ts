@@ -165,7 +165,7 @@ export class ObjC {
     if (path instanceof URL) {
       path = fromFileUrl(path);
     } else if (!path.startsWith("/")) {
-      path = `/System/Library/Frameworks/${path}.framework/${path}`;
+      path = `/System/Library/Frameworks/${path}.framework`;
     }
 
     ObjC.#NSString = ObjC.#NSString ?? ObjC.classes.NSString;
