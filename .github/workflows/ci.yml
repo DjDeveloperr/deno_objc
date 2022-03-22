@@ -1,4 +1,4 @@
-name: Lint Test
+name: ci
 
 on:
   push:
@@ -7,7 +7,25 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@main
+        with:
+          deno-version: 'v1.x'
+
+      - name: Formating
+        run: deno fmt --check
+
+      - name: Lint
+        run: deno lint --unstable
+
+  test:
     runs-on: macos-latest
 
     steps:
