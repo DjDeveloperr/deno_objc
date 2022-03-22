@@ -21,9 +21,16 @@ export function createProxy(self: Class | CObject) {
         }
         return (target as any)[prop];
       } else {
-        const sel = new Sel(prop);
         return (...args: any[]) => {
-          const result = ObjC.msgSend(target, sel, ...args);
+          let name: string = prop;
+          if (name.includes("_") && args.length > 0) {
+            name = name.replace("_", ":");
+          }
+          if (args.length > 0 && !name.endsWith(":")) {
+            name += ":";
+          }
+
+          const result = ObjC.msgSend(target, prop, ...args);
           if (result instanceof Class || result instanceof CObject) {
             return createProxy(result);
           } else {

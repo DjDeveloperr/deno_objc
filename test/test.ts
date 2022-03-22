@@ -6,9 +6,6 @@ const {
 } = objc.classes;
 
 const date = NSDate.date();
-console.log(date);
 const dateFormatter = NSDateFormatter
-  ["localizedStringFromDate:dateStyle:timeStyle:"](date, 2, 2);
-console.log(dateFormatter);
-const cstr = dateFormatter.UTF8String();
-console.log(cstr);
+  .localizedStringFromDate_dateStyle_timeStyle(date, 2, 2);
+console.log(dateFormatter.UTF8String());
