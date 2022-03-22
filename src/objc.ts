@@ -68,6 +68,14 @@ export function createMethodProxy(self: Class | CObject, name: string) {
         return target[prop];
       }
     },
+
+    has(_, p) {
+      if (typeof p === "symbol" && p.description === "Deno.customInspect") {
+        return true;
+      } else {
+        return false;
+      }
+    },
   });
 }
 
