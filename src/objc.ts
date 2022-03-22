@@ -151,9 +151,8 @@ export function createProxy(self: Class | CObject) {
  *   ```
  *   Only major difference is that instead of `:` in method names, put
  *   `_` (underscores). They get replaced at the time of calling.
- *   Even that is optional, but better than doing 
+ *   Even that is optional, but better than doing
  *   `NSString["stringWithUTF8String:"](...)`.
- *   
  */
 export class ObjC {
   /**
