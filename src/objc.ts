@@ -163,14 +163,21 @@ export class ObjC {
     const cargs = [
       obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
       sel[_handle],
-      ...args.map((e, i) => toNative(argDefs[i + 2], e)),
+      ...args.map((e, i) => {
+        const def = argDefs[i + 2];
+        if (typeof e === "string") {
+          if (def.type === "id") {
+            e = this.classes.NSString.stringWithUTF8String(e);
+          } else if (def.type === "class") {
+            e = this.classes[e];
+          }
+        }
+        return toNative(def, e);
+      }),
     ];
 
     return fromNative(retDef, (fn.call as any)(...cargs));
   }
-
-  static #NSString: any;
-  static #NSBundle: any;
 
   static import(path: string | URL) {
     if (path instanceof URL) {
@@ -179,11 +186,9 @@ export class ObjC {
       path = `/System/Library/Frameworks/${path}.framework`;
     }
 
-    ObjC.#NSString = ObjC.#NSString ?? ObjC.classes.NSString;
-    ObjC.#NSBundle = ObjC.#NSBundle ?? ObjC.classes.NSBundle;
+    const { NSBundle } = this.classes;
+    const bundle = NSBundle.bundleWithPath(path);
 
-    const nspath = ObjC.#NSString.stringWithUTF8String(path);
-    const bundle = ObjC.#NSBundle.bundleWithPath(nspath);
     if (!bundle) {
       throw new Error(`Could not load bundle at ${path}`);
     }
