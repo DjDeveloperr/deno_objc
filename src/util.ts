@@ -2,9 +2,8 @@ export const _handle = Symbol("[[objc_handle]]");
 export const _proxied = Symbol("[[objc_proxied]]");
 
 export function toCString(str: string) {
-  const encoded = new TextEncoder().encode(str);
-  const buffer = new Uint8Array(encoded.byteLength + 1);
-  buffer.set(encoded);
+  const buffer = new Uint8Array(str.length + 1);
+  new TextEncoder().encodeInto(str, buffer);
   return buffer;
 }
 

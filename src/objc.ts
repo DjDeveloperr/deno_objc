@@ -20,6 +20,7 @@ function toJS(c: any) {
   }
 }
 
+/** Creates method proxy for an Objective-C class/instance method */
 export function createMethodProxy(self: Class | CObject, name: string) {
   return new Proxy(() => {}, {
     apply(_target, _self, args) {
@@ -30,7 +31,7 @@ export function createMethodProxy(self: Class | CObject, name: string) {
         name += ":";
       }
 
-      return toJS(ObjC.msgSend(self, name, ...args));
+      return ObjC.msgSend(self, name, ...args);
     },
 
     get(target: any, prop) {
@@ -80,6 +81,7 @@ export function createMethodProxy(self: Class | CObject, name: string) {
   });
 }
 
+/** Creates a class/object proxy that gives access to methods via JS properties */
 export function createProxy(self: Class | CObject) {
   // const objclass = self instanceof Class ? self : self.class;
   const proxy: any = new Proxy(self, {
@@ -117,7 +119,54 @@ export function createProxy(self: Class | CObject) {
   return proxy;
 }
 
+/**
+ * Objective-C runtime bindings
+ *
+ * Overview:
+ * - Get a registered class by it's name using either `getClass` or
+ *   the `classes` proxy to destructure and get multiple classes at
+ *   same time.
+ *   ```ts
+ *   const { NSString, NSObject } = objc.classes;
+ *   ```
+ *
+ * - Import a framework bundle using `import`.
+ *   ```ts
+ *   objc.import("AppKit");
+ *   ```
+ *
+ * - Send messages, preferably using class proxies, which we provide
+ *   by default. In fact, you should never have to deal with other
+ *   classes exported from this module such as `Class`, `CObject`, etc.
+ *   Most of the Objective-C runtime is abstracted away by proxies.
+ *   ```ts
+ *   const { NSString } = objc.classes;
+ *   const emptyString = NSString.string();
+ *   // or chain methods like
+ *   const emptyString = NSString.alloc().init();
+ *
+ *   const hello = NSString.stringWithUTF8String("Hello, world!");
+ *   // Convert to JS string
+ *   const jsHello = hello.UTF8String();
+ *   ```
+ *   Only major difference is that instead of `:` in method names, put
+ *   `_` (underscores). They get replaced at the time of calling.
+ *   Even that is optional, but better than doing 
+ *   `NSString["stringWithUTF8String:"](...)`.
+ *   
+ */
 export class ObjC {
+  /**
+   * A proxy that gives access to all loaded classes via JS properties.
+   *
+   * Usage:
+   * ```ts
+   * const {
+   *   NSString,
+   *   NSBundle,
+   * } = objc.classes;
+   * ```
+   */
   static readonly classes: Record<string, any> = new Proxy({}, {
     get: (_, name) => {
       if (typeof name === "symbol") return;
@@ -127,10 +176,12 @@ export class ObjC {
     },
   });
 
+  /** Returns the number of currently registered classes */
   static get classCount() {
     return sys.objc_getClassList(null, 0);
   }
 
+  /** Returns array of all currently registered classes */
   static get classList() {
     const outCount = new Uint32Array(1);
     const classPtrs = new Deno.UnsafePointerView(
@@ -144,6 +195,7 @@ export class ObjC {
     return classes;
   }
 
+  /** Get a registered class by its name */
   static getClass(name: string): Class | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getClass(nameCstr);
@@ -164,6 +216,7 @@ export class ObjC {
   //   return imageNames;
   // }
 
+  /** Send a message (call class/instance method) to class/instance. */
   static msgSend<T = any>(
     obj: any,
     selector: string | Deno.UnsafePointer | Sel,
@@ -229,9 +282,19 @@ export class ObjC {
       }),
     ];
 
-    return fromNative(retDef, (fn.call as any)(...cargs));
+    return toJS(fromNative(retDef, (fn.call as any)(...cargs)));
   }
 
+  /**
+   * Load a framework at runtime using `NSBundle` API.
+   *
+   * Example:
+   * ```ts
+   * objc.import("AppKit");
+   * // or
+   * objc.import("/System/Library/Frameworks/AppKit.framework");
+   * ```
+   */
   static import(path: string | URL) {
     if (path instanceof URL) {
       path = fromFileUrl(path);
@@ -254,13 +317,20 @@ export class ObjC {
     return `ObjC { ${ObjC.classCount} classes }`;
   }
 
+  /**
+   * Template Tag for sending messages.
+   *
+   * Example:
+   * ```ts
+   * const { NSString } = objc.classes;
+   * const str = objc.send`${NSString} stringWithUTF8String:${"Hello"}`;
+   * ```
+   */
   static send(template: TemplateStringsArray, ...args: any[]) {
-    return toJS(
-      ObjC.msgSend(
-        args[0],
-        template.map((e) => e.trim()).join(""),
-        ...args.slice(1),
-      ),
+    return ObjC.msgSend(
+      args[0],
+      template.map((e) => e.trim()).join(""),
+      ...args.slice(1),
     );
   }
 }

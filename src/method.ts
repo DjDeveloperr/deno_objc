@@ -3,6 +3,7 @@ import { Imp } from "./imp.ts";
 import { Sel } from "./sel.ts";
 import { _handle } from "./util.ts";
 
+/** Represents a class/instance method */
 export class Method {
   [_handle]: Deno.UnsafePointer;
 

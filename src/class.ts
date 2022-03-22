@@ -5,6 +5,9 @@ import { Property } from "./property.ts";
 import { Sel } from "./sel.ts";
 import { _handle, toCString } from "./util.ts";
 
+/**
+ * Represents an Objective-C class.
+ */
 export class Class {
   [_handle]: Deno.UnsafePointer;
 

@@ -1,10 +1,13 @@
 // https://developer.apple.com/documentation/objectivec/objective-c_runtime
-const lib = Deno.dlopen(
-  Deno.build.os === "windows"
-    ? "objc.dll"
-    : Deno.build.os === "linux"
-    ? "libobjc.so"
-    : "libobjc.dylib",
+
+/** Low-level Objective-C runtime bindings */
+export default Deno.dlopen(
+  Deno.env.get("DENO_OBJC_PATH") ??
+    (Deno.build.os === "windows"
+      ? "objc.dll"
+      : Deno.build.os === "linux"
+      ? "libobjc.so"
+      : "libobjc.dylib"),
   {
     // Working with Classes
 
@@ -513,11 +516,10 @@ const lib = Deno.dlopen(
       type: "pointer",
     },*/
   } as const,
-);
+).symbols;
 
 // Load Foundation by default.
+// This will give us access to classes like NSString, NSBundle, etc.
 if (Deno.build.os === "darwin") {
   Deno.dlopen("/System/Library/Frameworks/Foundation.framework/Foundation", {});
 }
-
-export default lib.symbols;

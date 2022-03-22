@@ -1,6 +1,7 @@
 import sys from "./bindings.ts";
 import { _handle } from "./util.ts";
 
+/** Represents an instance variable on class */
 export class Ivar {
   [_handle]: Deno.UnsafePointer;
 
