@@ -396,7 +396,7 @@ export function fromNative(enc: CTypeInfo, v: any) {
         return v;
       } else if (enc.type === "id") {
         return new CObject(v);
-      } else if (enc.type === "class"){
+      } else if (enc.type === "class") {
         return new Class(v);
       } else if (enc.type === "sel") {
         return new Sel(v);
