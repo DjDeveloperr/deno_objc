@@ -176,7 +176,13 @@ export class ObjC {
       }),
     ];
 
-    const result = fromNative(retDef, (fn.call as any)(...cargs));
+    let result = fromNative(retDef, (fn.call as any)(...cargs));
+
+    if (result) {
+      if (result instanceof Class || result instanceof CObject) {
+        result = createProxy(result);
+      }
+    }
 
     if (retDef.type === "id" && result) {
       try {
