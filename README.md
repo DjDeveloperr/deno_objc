@@ -1,6 +1,6 @@
 # deno_objc
 
-Objective-C -> JavaScript bridge for Deno.
+Objective-C runtime bridge for Deno.
 
 ```ts
 import objc from "https://deno.land/x/objc@0.0.1/mod.ts";
