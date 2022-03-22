@@ -1,4 +1,4 @@
-import objc, { U32 } from "../mod.ts";
+import objc from "../mod.ts";
 
 const {
   NSDate,
@@ -10,8 +10,8 @@ const dateFormatter = objc.msgSend(
   NSDateFormatter,
   "localizedStringFromDate:dateStyle:timeStyle:",
   date,
-  new U32(2),
-  new U32(2),
+  2,
+  2,
 );
 console.log(dateFormatter);
 const cstr = objc.msgSend(dateFormatter, "UTF8String");

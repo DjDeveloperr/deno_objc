@@ -1,6 +1,13 @@
 import sys from "./bindings.ts";
 import { Class } from "./class.ts";
-import { prepare } from "./message.ts";
+import {
+  CTypeInfo,
+  fromNative,
+  parseCType,
+  toNative,
+  toNativeType,
+} from "./encoding.ts";
+import { CObject } from "./object.ts";
 import { Sel } from "./sel.ts";
 import { _handle, toCString } from "./util.ts";
 
@@ -50,24 +57,56 @@ export class ObjC {
   // }
 
   static msgSend(
-    obj: any,
-    selector: string,
+    obj: Class | CObject,
+    selector: string | Deno.UnsafePointer,
     ...args: any[]
-  ): Deno.UnsafePointer {
-    const { parameters, values } = prepare(args);
+  ): any {
+    const sel = new Sel(selector);
+    const objptr = obj instanceof Deno.UnsafePointer ? obj : obj[_handle];
+    const objclass = new Class(objptr);
+
+    const method = obj instanceof Class
+      ? objclass.getClassMethod(sel)
+      : objclass.getInstanceMethod(sel);
+    if (!method) {
+      throw new Error(`${objclass.name} does not respond to ${sel.name}`);
+    }
+
+    const argc = method.argumentCount;
+    if ((args.length + 2) !== argc) {
+      throw new Error(
+        `${objclass.name} ${sel.name} expects ${
+          argc - 2
+        } arguments, but got ${args.length}`,
+      );
+    }
+
+    const argDefs: CTypeInfo[] = [];
+    const retDef = parseCType(method.returnType);
+
+    for (let i = 0; i < argc; i++) {
+      const arg = method.getArgumentType(i);
+      argDefs.push(parseCType(arg));
+    }
+
+    const argDefsNative = argDefs.map(toNativeType);
+    const retDefNative = toNativeType(retDef);
+
     const fn = new Deno.UnsafeFnPointer(
       sys.objc_msgSend,
       {
-        parameters: ["pointer", "pointer", ...parameters],
-        result: "pointer",
+        parameters: argDefsNative,
+        result: retDefNative,
       } as const,
     );
+
     const cargs = [
       obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
-      Sel.register(selector)[_handle],
-      ...values,
+      sel[_handle],
+      ...args.map((e, i) => toNative(e, argDefs[i + 2])),
     ];
-    return (fn.call as any)(...cargs) as Deno.UnsafePointer;
+
+    return fromNative((fn.call as any)(...cargs), retDef);
   }
 }
 
