@@ -31,6 +31,8 @@ export function createProxy(self: Class | CObject) {
               return result;
             }
           };
+        } else {
+          throw new Error(`${objclass.name} does not respond to ${prop}`);
         }
       }
     },
