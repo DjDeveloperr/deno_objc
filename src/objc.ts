@@ -206,7 +206,11 @@ export class ObjC {
 
   static send(template: TemplateStringsArray, ...args: any[]) {
     return toJS(
-      ObjC.msgSend(this, template.map((e) => e.trim()).join(""), ...args),
+      ObjC.msgSend(
+        args[0],
+        template.map((e) => e.trim()).join(""),
+        ...args.slice(1),
+      ),
     );
   }
 }
