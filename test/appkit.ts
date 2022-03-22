@@ -28,6 +28,3 @@ console.log(window);
 
 window.setBackgroundColor(NSColor.blueColor());
 window.makeKeyAndOrderFront(app);
-
-console.log(window.frame);
-console.log(window.frame());
