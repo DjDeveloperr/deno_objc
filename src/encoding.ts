@@ -356,6 +356,8 @@ export function toNative(enc: CTypeInfo, v: any) {
 }
 
 export function fromNative(enc: CTypeInfo, v: any) {
+  console.log("fromNative", enc, v);
+
   switch (enc.type) {
     case "char": // u8
       return String.fromCharCode(v);
