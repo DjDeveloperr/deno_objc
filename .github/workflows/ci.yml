@@ -42,3 +42,6 @@ jobs:
 
       - name: Test AppKit
         run: deno task test-appkit
+
+      - name: Test Pasteboard
+        run: deno task test-pasteboard
