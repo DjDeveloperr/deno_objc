@@ -53,7 +53,11 @@ export function createMethodProxy(self: Class | CObject, name: string) {
             let args = "";
             for (let i = 0; i < parts.length; i++) {
               const part = parts[i];
-              args += `${part}:${method.getArgumentType(i + 2)} `;
+              args += `${part}:${
+                (i + 2 >= method.argumentCount)
+                  ? "OOB"
+                  : method.getArgumentType(i + 2)
+              } `;
             }
             return `${
               self instanceof Class
