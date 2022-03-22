@@ -3,8 +3,8 @@ import objc from "../mod.ts";
 objc.import("AppKit");
 
 const {
-  NSPasteBoard,
+  NSPasteboard,
 } = objc.classes;
 
-const pasteboard = NSPasteBoard.generalPasteboard();
+const pasteboard = NSPasteboard.generalPasteboard();
 console.log(pasteboard);
