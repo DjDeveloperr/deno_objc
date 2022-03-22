@@ -1,4 +1,5 @@
 import objc from "../mod.ts";
+import { assert, assertEquals } from "./deps.ts";
 
 objc.import("AppKit");
 
@@ -14,6 +15,13 @@ Deno.test("pasteboard", async (t) => {
   });
 
   await t.step("write string", () => {
-    pasteboard.setString_forType("hello world", "public.utf8-plain-text");
+    assert(
+      pasteboard.setString_forType("hello world", "public.utf8-plain-text"),
+    );
+  });
+
+  await t.step("read string", () => {
+    const str = pasteboard.stringForType("public.utf8-plain-text");
+    assertEquals(str, "hello world");
   });
 });
