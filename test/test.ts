@@ -16,4 +16,4 @@ const dateFormatter = objc.msgSend(
 );
 console.log(dateFormatter);
 const cstr = objc.msgSend(dateFormatter, "UTF8String");
-console.log(new Deno.UnsafePointerView(cstr).getCString());
+console.log(cstr);
