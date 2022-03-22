@@ -16,7 +16,7 @@ const window = NSWindow
   .alloc()
   .initWithContentRect_styleMask_backing_defer(
     rect,
-    0b110,
+    0,
     2,
     0,
   );
