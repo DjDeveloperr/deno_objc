@@ -63,7 +63,9 @@ export class ObjC {
   ): T {
     const sel = new Sel(selector);
     const objptr = obj instanceof Deno.UnsafePointer ? obj : obj[_handle];
-    const objclass = new Class(objptr);
+    const objclass = obj instanceof Class
+      ? obj
+      : new Class(sys.object_getClass(objptr));
 
     const method = obj instanceof Class
       ? objclass.getClassMethod(sel)
