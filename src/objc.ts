@@ -158,6 +158,7 @@ export class ObjC {
     return fromNative(retDef, (fn.call as any)(...cargs));
   }
 
+  static #NSString: any;
   static #NSBundle: any;
 
   static import(path: string | URL) {
@@ -166,8 +167,12 @@ export class ObjC {
     } else if (!path.startsWith("/")) {
       path = `/System/Library/Frameworks/${path}.framework/${path}`;
     }
+
+    ObjC.#NSString = ObjC.#NSString ?? ObjC.classes.NSString;
     ObjC.#NSBundle = ObjC.#NSBundle ?? ObjC.classes.NSBundle;
-    const bundle = ObjC.#NSBundle.bundleWithPath(path);
+
+    const nspath = ObjC.#NSString.stringWithString(path);
+    const bundle = ObjC.#NSBundle.bundleWithPath(nspath);
     if (!bundle) {
       throw new Error(`Could not load bundle at ${path}`);
     }
