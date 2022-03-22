@@ -22,7 +22,7 @@ Deno.test("pasteboard", async (t) => {
   });
 
   await t.step("read string", () => {
-    const str = pb.stringForType("public.utf8-plain-text");
+    const str = pb.stringForType("public.utf8-plain-text").UTF8String();
     assertEquals(str, "hello world");
   });
 });
