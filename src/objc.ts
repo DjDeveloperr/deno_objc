@@ -83,7 +83,7 @@ export function createMethodProxy(self: Class | CObject, name: string) {
 
 /** Creates a class/object proxy that gives access to methods via JS properties */
 export function createProxy(self: Class | CObject) {
-  // const objclass = self instanceof Class ? self : self.class;
+  const objclass = self instanceof Class ? self : self.class;
   const proxy: any = new Proxy(self, {
     get(target, prop) {
       if (typeof prop === "symbol") {
@@ -102,16 +102,35 @@ export function createProxy(self: Class | CObject) {
           };
         } else return (target as any)[prop];
       } else {
+        if (self instanceof CObject) {
+          const property = objclass.getProperty(prop);
+          if (property) {
+            const getter = property.getAttributeValue("G") || prop;
+            return createMethodProxy(self, getter)();
+          }
+        }
         return createMethodProxy(self, prop);
       }
     },
-    set(_target, _prop, _value) {
-      return false;
+    set(_target, prop, value) {
+      if (typeof prop !== "string") return false;
+      if (self instanceof CObject) {
+        const property = objclass.getProperty(prop);
+        if (property) {
+          const setter = property.getAttributeValue("S") || `set${prop[0].toUpperCase()}${prop.slice(1)}:`;
+          ObjC.msgSend(self, setter, toNative(parseCType(property.getAttributeValue("T") ?? "?"), value));
+          return true;
+        }
+      }
+      throw new Error(`Cannot set property ${prop}`);
     },
     has(target, prop) {
       if (typeof prop === "symbol") {
         return prop in target;
       } else {
+        if (self instanceof CObject) {
+          return !!objclass.getProperty(prop);
+        }
         return false;
       }
     },
@@ -276,6 +295,13 @@ export class ObjC {
           } else if (def.type === "class") {
             e = this.classes[e];
           }
+        }
+        if (typeof e === "object" && e !== null && e instanceof Array) {
+          const arr = this.classes.NSMutableArray.array();
+          for (const ee of e) {
+            arr.addObject(ee);
+          }
+          e = arr;
         }
         return toNative(def, e);
       }),

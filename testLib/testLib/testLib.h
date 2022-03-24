@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 
 @interface testLib : NSObject
 
@@ -18,8 +19,21 @@
 - (NSString *)bookInfoWithComment:(NSString *)comment;
 
 @end
-// change the language to objc
-// done
-// but now idk objc
-// neither do i
-// objc speedrun les go
+
+typedef struct {
+    bool shouldClose;
+} WindowState;
+
+@interface WindowDelegate : NSObject <NSWindowDelegate> {
+    WindowState *state;
+}
+
+@property(nonatomic, readwrite) WindowState *state;
+
+- (void)initWithState:(WindowState*)state;
+
+- (BOOL)windowShouldClose:(id)sender;
+
+- (void)windowWillClose:(NSNotification *)notification;
+
+@end

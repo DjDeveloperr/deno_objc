@@ -1,3 +1,4 @@
 test.dylib
 .vscode/
 build/
+deno/

@@ -261,7 +261,7 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "long":
       return "i32";
     case "long long":
-      return "i64";
+      return { struct: ["i32", "i32"] } as any;
     case "unsigned char":
       return "u8";
     case "unsigned int":
@@ -271,7 +271,7 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "unsigned long":
       return "u32";
     case "unsigned long long":
-      return "u64";
+      return { struct: ["u32", "u32"] } as any;
     case "float":
       return "f32";
     case "double":
@@ -289,9 +289,9 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "sel":
       return "pointer";
     case "array":
-      return "pointer";
+      return { struct: new Array(enc.length).fill(enc.elementType).map(toNativeType) } as any;
     case "struct":
-      return "pointer";
+      return { struct: enc.fields.map(toNativeType) } as any;
     case "pointer":
       return "pointer";
     case "bitfield":
@@ -323,18 +323,26 @@ export function toNative(enc: CTypeInfo, v: any) {
     case "int": // i32
     case "short": // i16
     case "long": // i32
-    case "long long": // i64
     case "unsigned char": // u8
     case "unsigned int": // u32
     case "unsigned short": // u16
     case "unsigned long": // u32
-    case "unsigned long long": // u64
     case "float": // f32
     case "double": // f64
     case "bool": // u8
     case "bitfield": // u64
       expectNumber(v);
       return Number(v);
+
+    case "unsigned long long": {
+      const big = BigInt(v);
+      return new BigUint64Array([big]);
+    }
+
+    case "long long": {
+      const big = BigInt(v);
+      return new BigInt64Array([big]);
+    }
 
     case "void": // void
       throw new Error("Cannot map encoding 'void' to Native Value");
@@ -376,7 +384,6 @@ export function fromNative(enc: CTypeInfo, v: any) {
     case "int": // i32
     case "short": // i16
     case "long": // i32
-    case "long long": // i64
     case "unsigned char": // u8
     case "unsigned int": // u32
     case "unsigned short": // u16
@@ -386,6 +393,12 @@ export function fromNative(enc: CTypeInfo, v: any) {
     case "double": // f64
     case "bitfield": // u64
       return Number(v);
+
+    case "unsigned long long":
+      return new BigUint64Array(v.buffer)[0];
+
+    case "long long":
+      return new BigInt64Array(v.buffer)[0];
 
     case "bool": // u8
       return v !== 0;
@@ -413,6 +426,8 @@ export function fromNative(enc: CTypeInfo, v: any) {
         return new Class(v);
       } else if (enc.type === "sel") {
         return new Sel(v);
+      } else if (enc.type === "struct") {
+        return v;
       }
     }
   }

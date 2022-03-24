@@ -20,3 +20,19 @@
 }
 
 @end
+
+@implementation WindowDelegate
+
+- (void)initWithState:(WindowState*)state {
+    self->state = state;
+}
+
+- (BOOL)windowShouldClose:(id)sender {
+    return YES;
+}
+
+- (void)windowWillClose:(NSNotification *)notification {
+    self->state->shouldClose = true;
+}
+
+@end
