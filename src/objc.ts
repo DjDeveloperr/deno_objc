@@ -120,6 +120,12 @@ export function createProxy(self: Class | CObject) {
           const setter = property.getAttributeValue("S") || `set${prop[0].toUpperCase()}${prop.slice(1)}:`;
           ObjC.msgSend(self, setter, toNative(parseCType(property.getAttributeValue("T") ?? "?"), value));
           return true;
+        } else {
+          const setter = proxy[`set${prop[0].toUpperCase()}${prop.slice(1)}:`];
+          if (setter && setter[Symbol.for("Deno.customInspect")]?.() !== "[method nil]") {
+            setter(value);
+            return true;
+          }
         }
       }
       throw new Error(`Cannot set property ${prop}`);
