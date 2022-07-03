@@ -3,9 +3,9 @@ import { _handle } from "./util.ts";
 
 /** Objective-C class method Implementation */
 export class Imp {
-  [_handle]: Deno.UnsafePointer;
+  [_handle]: bigint;
 
-  constructor(handle: Deno.UnsafePointer) {
+  constructor(handle: bigint) {
     this[_handle] = handle;
   }
 }

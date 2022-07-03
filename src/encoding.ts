@@ -82,8 +82,13 @@ export interface CPointerTypeInfo extends BaseCTypeInfo {
   pointeeType: CTypeInfo;
 }
 
+export type SimpleCType = Exclude<
+  CType,
+  "array" | "struct" | "bitfield" | "pointer"
+>;
+
 export interface RestCTypeInfo extends BaseCTypeInfo {
-  type: Exclude<CType, "array" | "struct" | "bitfield" | "pointer">;
+  type: SimpleCType;
 }
 
 export type CTypeInfo =
@@ -92,6 +97,125 @@ export type CTypeInfo =
   | CStructTypeInfo
   | CBitfieldTypeInfo
   | CPointerTypeInfo;
+
+export type CTypeEncodable = SimpleCType | CTypeInfo;
+
+export function encodeCType(ty: CTypeEncodable): string {
+  if (typeof ty === "string") {
+    ty = { type: ty };
+  }
+
+  switch (ty.type) {
+    case "char":
+      return CHAR;
+    case "int":
+      return INT;
+    case "short":
+      return SHORT;
+    case "long":
+      return LONG;
+    case "long long":
+      return LONG_LONG;
+    case "unsigned char":
+      return UNSIGNED_CHAR;
+    case "unsigned int":
+      return UNSIGNED_INT;
+    case "unsigned short":
+      return UNSIGNED_SHORT;
+    case "unsigned long":
+      return UNSIGNED_LONG;
+    case "unsigned long long":
+      return UNSIGNED_LONG_LONG;
+    case "float":
+      return FLOAT;
+    case "double":
+      return DOUBLE;
+    case "bool":
+      return BOOL;
+    case "void":
+      return VOID;
+    case "string":
+      return STRING;
+    case "id":
+      return ID;
+    case "class":
+      return CLASS;
+    case "sel":
+      return SEL;
+    case "array":
+      return ARRAY_BEGIN + ty.length + encodeCType(ty.elementType) + ARRAY_END;
+    case "struct":
+      return NAME_BEGIN + ty.name + "=" + ty.fields.map(encodeCType).join("") +
+        NAME_END;
+    case "bitfield":
+      return BITFIELD_BEGIN + ty.size;
+    case "pointer":
+      return POINTER_BEGIN + encodeCType(ty.pointeeType);
+    case "unknown":
+      return UNKNOWN;
+
+    default:
+      throw new Error("Unknown CType: " + Deno.inspect(ty));
+  }
+}
+
+export function getCTypeSize(ty: CTypeEncodable): number {
+  if (typeof ty === "string") {
+    ty = { type: ty };
+  }
+
+  switch (ty.type) {
+    case "char":
+      return 1;
+    case "int":
+      return 4;
+    case "short":
+      return 2;
+    case "long":
+      return 4;
+    case "long long":
+      return 8;
+    case "unsigned char":
+      return 1;
+    case "unsigned int":
+      return 4;
+    case "unsigned short":
+      return 2;
+    case "unsigned long":
+      return 4;
+    case "unsigned long long":
+      return 8;
+    case "float":
+      return 4;
+    case "double":
+      return 8;
+    case "bool":
+      return 1;
+    case "void":
+      return 0;
+    case "string":
+      return 8;
+    case "id":
+      return 8;
+    case "class":
+      return 8;
+    case "sel":
+      return 8;
+    case "array":
+      return ty.length * getCTypeSize(ty.elementType);
+    case "struct":
+      return ty.fields.reduce((acc, field) => acc + getCTypeSize(field), 0);
+    case "bitfield":
+      return ty.size;
+    case "pointer":
+      return 8;
+    case "unknown":
+      return 0;
+
+    default:
+      throw new Error("Unknown CType: " + Deno.inspect(ty));
+  }
+}
 
 class CTypeParser {
   source: string;
@@ -250,7 +374,7 @@ export function parseCType(source: string) {
   return parser.parse();
 }
 
-export function toNativeType(enc: CTypeInfo): Deno.NativeType {
+export function toNativeType(enc: CTypeInfo): Deno.NativeResultType {
   switch (enc.type) {
     case "char":
       return "u8";
@@ -261,7 +385,7 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "long":
       return "i32";
     case "long long":
-      return { struct: ["i32", "i32"] } as any;
+      return "i64";
     case "unsigned char":
       return "u8";
     case "unsigned int":
@@ -271,7 +395,7 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "unsigned long":
       return "u32";
     case "unsigned long long":
-      return { struct: ["u32", "u32"] } as any;
+      return "u64";
     case "float":
       return "f32";
     case "double":
@@ -289,7 +413,9 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeType {
     case "sel":
       return "pointer";
     case "array":
-      return { struct: new Array(enc.length).fill(enc.elementType).map(toNativeType) } as any;
+      return {
+        struct: new Array(enc.length).fill(enc.elementType).map(toNativeType),
+      } as any;
     case "struct":
       return { struct: enc.fields.map(toNativeType) } as any;
     case "pointer":
@@ -334,18 +460,13 @@ export function toNative(enc: CTypeInfo, v: any) {
       expectNumber(v);
       return Number(v);
 
-    case "unsigned long long": {
-      const big = BigInt(v);
-      return new BigUint64Array([big]);
-    }
-
+    case "unsigned long long":
     case "long long": {
-      const big = BigInt(v);
-      return new BigInt64Array([big]);
+      return BigInt(v);
     }
 
     case "void": // void
-      throw new Error("Cannot map encoding 'void' to Native Value");
+      return undefined;
 
     case "string": // pointer
       return toCString(v);
@@ -358,7 +479,7 @@ export function toNative(enc: CTypeInfo, v: any) {
     case "array":
     case "struct": {
       if (
-        v === null || v instanceof Deno.UnsafePointer || isArrayBufferView(v)
+        v === null || typeof v === "bigint" || isArrayBufferView(v)
       ) {
         return v;
       } else if (enc.type === "sel" && typeof v === "string") {
@@ -379,7 +500,7 @@ export function toNative(enc: CTypeInfo, v: any) {
 export function fromNative(enc: CTypeInfo, v: any) {
   switch (enc.type) {
     case "char": // u8
-      return String.fromCharCode(v);
+      return v;
 
     case "int": // i32
     case "short": // i16
@@ -388,7 +509,6 @@ export function fromNative(enc: CTypeInfo, v: any) {
     case "unsigned int": // u32
     case "unsigned short": // u16
     case "unsigned long": // u32
-    case "unsigned long long": // u64
     case "float": // f32
     case "double": // f64
     case "bitfield": // u64

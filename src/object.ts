@@ -3,9 +3,9 @@ import { Class } from "./class.ts";
 import { _handle } from "./util.ts";
 
 export class CObject {
-  [_handle]: Deno.UnsafePointer;
+  [_handle]: bigint;
 
-  constructor(handle: Deno.UnsafePointer) {
+  constructor(handle: bigint) {
     this[_handle] = handle;
   }
 
