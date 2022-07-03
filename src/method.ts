@@ -5,9 +5,9 @@ import { _handle } from "./util.ts";
 
 /** Represents a class/instance method */
 export class Method {
-  [_handle]: Deno.UnsafePointer;
+  [_handle]: bigint;
 
-  constructor(handle: Deno.UnsafePointer) {
+  constructor(handle: bigint) {
     this[_handle] = handle;
   }
 
@@ -24,6 +24,7 @@ export class Method {
 
   getArgumentType(index: number) {
     const ptr = sys.method_copyArgumentType(this[_handle], index);
+    if (ptr === 0n) return "";
     const ptrView = new Deno.UnsafePointerView(ptr);
     return ptrView.getCString();
   }

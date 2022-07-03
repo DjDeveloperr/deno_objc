@@ -1,5 +1,5 @@
 import sys from "./bindings.ts";
-import { Class } from "./class.ts";
+import { Class, ClassCreateOptions } from "./class.ts";
 import {
   CTypeInfo,
   fromNative,
@@ -11,6 +11,7 @@ import { CObject } from "./object.ts";
 import { Sel } from "./sel.ts";
 import { _handle, _proxied, toCString } from "./util.ts";
 import { fromFileUrl } from "../deps.ts";
+import common from "./common.ts";
 
 function toJS(c: any) {
   if (c instanceof Class || c instanceof CObject) {
@@ -89,6 +90,8 @@ export function createProxy(self: Class | CObject) {
       if (typeof prop === "symbol") {
         if (prop === _proxied) {
           return self;
+        } else if (prop === _handle) {
+          return self[_handle];
         } else if (prop.description === "Deno.customInspect") {
           return () => {
             try {
@@ -117,12 +120,20 @@ export function createProxy(self: Class | CObject) {
       if (self instanceof CObject) {
         const property = objclass.getProperty(prop);
         if (property) {
-          const setter = property.getAttributeValue("S") || `set${prop[0].toUpperCase()}${prop.slice(1)}:`;
-          ObjC.msgSend(self, setter, toNative(parseCType(property.getAttributeValue("T") ?? "?"), value));
+          const setter = property.getAttributeValue("S") ||
+            `set${prop[0].toUpperCase()}${prop.slice(1)}:`;
+          ObjC.msgSend(
+            self,
+            setter,
+            value, // toNative(parseCType(property.getAttributeValue("T") ?? "?"), value),
+          );
           return true;
         } else {
           const setter = proxy[`set${prop[0].toUpperCase()}${prop.slice(1)}:`];
-          if (setter && setter[Symbol.for("Deno.customInspect")]?.() !== "[method nil]") {
+          if (
+            setter &&
+            setter[Symbol.for("Deno.customInspect")]?.() !== "[method nil]"
+          ) {
             setter(value);
             return true;
           }
@@ -143,6 +154,8 @@ export function createProxy(self: Class | CObject) {
   });
   return proxy;
 }
+
+common.createProxy = createProxy;
 
 /**
  * Objective-C runtime bindings
@@ -213,7 +226,7 @@ export class ObjC {
     );
     const classes = new Array<Class>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
-      const ptr = new Deno.UnsafePointer(classPtrs.getBigUint64(i * 8));
+      const ptr = classPtrs.getBigUint64(i * 8);
       classes[i] = new Class(ptr);
     }
     return classes;
@@ -223,7 +236,7 @@ export class ObjC {
   static getClass(name: string): Class | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getClass(nameCstr);
-    if (classPtr.value === 0n) return undefined;
+    if (classPtr === 0n) return undefined;
     return new Class(classPtr);
   }
 
@@ -243,14 +256,14 @@ export class ObjC {
   /** Send a message (call class/instance method) to class/instance. */
   static msgSend<T = any>(
     obj: any,
-    selector: string | Deno.UnsafePointer | Sel,
+    selector: string | bigint | Sel,
     ...args: any[]
   ): T {
     const sel = new Sel(selector);
     if (obj[_proxied]) {
       obj = obj[_proxied];
     }
-    const objptr = obj instanceof Deno.UnsafePointer ? obj : obj[_handle];
+    const objptr = typeof obj === "bigint" ? obj : obj[_handle];
     const objclass = obj instanceof Class
       ? obj
       : new Class(sys.object_getClass(objptr));
@@ -285,13 +298,13 @@ export class ObjC {
     const fn = new Deno.UnsafeFnPointer(
       sys.objc_msgSend,
       {
-        parameters: argDefsNative,
+        parameters: argDefsNative as Deno.NativeType[],
         result: retDefNative,
       } as const,
     );
 
     const cargs = [
-      obj instanceof Deno.UnsafePointer ? obj : obj[_handle],
+      typeof obj === "bigint" ? obj : obj[_handle],
       sel[_handle],
       ...args.map((e, i) => {
         const def = argDefs[i + 2];
@@ -363,6 +376,14 @@ export class ObjC {
       template.map((e) => e.trim()).join(""),
       ...args.slice(1),
     );
+  }
+
+  /**
+   * Create an Objective C class implementing methods using JS
+   * callbacks.
+   */
+  static createClass(options: ClassCreateOptions) {
+    return Class.create(options);
   }
 }
 

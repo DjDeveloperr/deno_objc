@@ -33,39 +33,9 @@ delegate.initWithState(state);
 window.setDelegate(delegate);
 
 window.setTitle("Deno Obj-C");
-// window.setBackgroundColor(NSColor.blueColor());
 window.makeKeyAndOrderFront(app);
 window.setReleasedWhenClosed(false);
 window.setAcceptsMouseMovedEvents(true);
-
-const contentView = window.contentView;
-contentView.autoresizesSubviews = true;
-
-const views = [];
-for (let i = 0; i < 5; i++) {
-  const label = NSTextField.textFieldWithString(`Hello, world! ${i}`);
-  label.setBezeled(false);
-  label.setEditable(false);
-  label.setSelectable(false);
-  // label.translatesAutoresizingMaskIntoConstraints = false;
-  // vstack.addView_inGravity(label, 1);
-  views.push(label);
-}
-
-const vstack = NSStackView.stackViewWithViews(views);
-
-// vstack.translatesAutoresizingMaskIntoConstraints = false;
-vstack.spacing = 0;
-vstack.orientation = 1;
-vstack.distribution = 0;
-vstack.alignment = 5;
-vstack.wantsLayer = true;
-vstack.autoresizingMask = 2 | 16
-vstack.layer.backgroundColor = NSColor.redColor();
-
-contentView.wantsLayer = true;
-
-contentView.addSubview(vstack);
 
 window.center();
 
@@ -93,5 +63,44 @@ const loop = setInterval(() => {
     return;
   }
   updateEvents();
-  contentView.setNeedsDisplay(true);
 }, 1000 / 60);
+
+setTimeout(() => {
+  const contentView = window.contentView;
+
+  const views = [];
+  for (let i = 0; i < 5; i++) {
+    const label = NSTextField.textFieldWithString(`Hello, world! ${i}`);
+    label.setBezeled(false);
+    label.setEditable(false);
+    label.setSelectable(false);
+    views.push(label);
+  }
+
+  const vstack = NSStackView.stackViewWithViews(views);
+
+  vstack.spacing = 0;
+  vstack.orientation = 1;
+  vstack.distribution = 0;
+  vstack.alignment = 0;
+
+  contentView.translatesAutoresizingMaskIntoConstraints = false;
+  contentView.addSubview(vstack);
+
+  vstack.topAnchor().constraintEqualToAnchor_constant(
+    contentView.topAnchor(),
+    10,
+  ).active = true;
+  vstack.bottomAnchor().constraintEqualToAnchor_constant(
+    contentView.bottomAnchor(),
+    -10,
+  ).active = true;
+  vstack.leftAnchor().constraintEqualToAnchor_constant(
+    contentView.leftAnchor(),
+    10,
+  ).active = true;
+  vstack.rightAnchor().constraintEqualToAnchor_constant(
+    contentView.rightAnchor(),
+    -10,
+  ).active = true;
+}, 500);

@@ -2,9 +2,9 @@ import sys from "./bindings.ts";
 import { _handle } from "./util.ts";
 
 export class Protocol {
-  [_handle]: Deno.UnsafePointer;
+  [_handle]: bigint;
 
-  constructor(handle: Deno.UnsafePointer) {
+  constructor(handle: bigint) {
     this[_handle] = handle;
   }
 
