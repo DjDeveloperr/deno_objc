@@ -353,12 +353,15 @@ declare namespace Deno {
 
   type NativeVoidType = "void";
 
+  type NativeStructType = { struct: NativeType[] };
+
   /** All possible types for interfacing with foreign functions */
   export type NativeType =
     | NativeNumberType
     | NativeBigIntType
     | NativePointerType
-    | NativeFunctionType;
+    | NativeFunctionType
+    | NativeStructType;
 
   export type NativeResultType = NativeType | NativeVoidType;
 
@@ -369,13 +372,16 @@ declare namespace Deno {
     & Record<NativeFunctionType, bigint | null>;
 
   /** Type conversion for foreign symbol parameters and unsafe callback return types */
-  type ToNativeType<T extends NativeType = NativeType> = ToNativeTypeMap[T];
+  type ToNativeType<T extends NativeType = NativeType> = T extends
+    NativeStructType ? TypedArray
+    : ToNativeTypeMap[Exclude<T, NativeStructType>];
 
   type ToNativeResultTypeMap = ToNativeTypeMap & Record<NativeVoidType, void>;
 
   /** Type conversion for unsafe callback return types */
   type ToNativeResultType<T extends NativeResultType = NativeResultType> =
-    ToNativeResultTypeMap[T];
+    T extends NativeStructType ? TypedArray
+      : ToNativeResultTypeMap[Exclude<T, NativeStructType>];
 
   type ToNativeParameterTypes<T extends readonly NativeType[]> =
     //
@@ -394,7 +400,9 @@ declare namespace Deno {
     & Record<NativeFunctionType, bigint>;
 
   /** Type conversion for foreign symbol return types and unsafe callback parameters */
-  type FromNativeType<T extends NativeType = NativeType> = FromNativeTypeMap[T];
+  type FromNativeType<T extends NativeType = NativeType> = T extends
+    NativeStructType ? Uint8Array
+    : FromNativeTypeMap[Exclude<T, NativeStructType>];
 
   type FromNativeResultTypeMap =
     & FromNativeTypeMap
@@ -402,7 +410,8 @@ declare namespace Deno {
 
   /** Type conversion for foregin symbol return types */
   type FromNativeResultType<T extends NativeResultType = NativeResultType> =
-    FromNativeResultTypeMap[T];
+    T extends NativeStructType ? Uint8Array
+      : FromNativeResultTypeMap[Exclude<T, NativeStructType>];
 
   type FromNativeParameterTypes<
     T extends readonly NativeType[],

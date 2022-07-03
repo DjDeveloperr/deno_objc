@@ -35,6 +35,8 @@ assertThrows(
   "Failed to register symbol non_existent_symbol",
 );
 
+const Rect = ["f64", "f64", "f64", "f64"];
+
 const dylib = Deno.dlopen(libPath, {
   "printSomething": {
     name: "print_something",
@@ -178,6 +180,14 @@ const dylib = Deno.dlopen(libPath, {
   },
   "static_ptr": {
     type: "pointer",
+  },
+  "make_rect": {
+    parameters: ["f64", "f64", "f64", "f64"],
+    result: { struct: Rect },
+  },
+  "print_rect": {
+    parameters: [{ struct: Rect }],
+    result: "void",
   },
 });
 
@@ -419,6 +429,11 @@ console.log(
 );
 const view = new Deno.UnsafePointerView(dylib.symbols.static_ptr);
 console.log("Static ptr value:", view.getUint32());
+
+const rect = dylib.symbols.make_rect(10, 20, 100, 200);
+dylib.symbols.print_rect(rect);
+// Ensure that `rect` backing memory was not deallocated by Rust in FFI call.
+console.log(rect);
 
 (function cleanup() {
   dylib.close();

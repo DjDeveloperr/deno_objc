@@ -92,7 +92,7 @@ impl PtrSymbol {
         .clone()
         .into_iter()
         .map(libffi::middle::Type::from),
-      def.result.into(),
+      def.result.clone().into(),
     );
 
     Self { cif, ptr }
@@ -220,7 +220,7 @@ pub fn init<P: FfiPermissions + 'static>(unstable: bool) -> Extension {
 
 /// Defines the accepted types that can be used as
 /// parameters and return values in FFI.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 enum NativeType {
   Void,
@@ -238,6 +238,32 @@ enum NativeType {
   F64,
   Pointer,
   Function,
+  Struct(Vec<NativeType>),
+}
+
+impl NativeType {
+  fn get_size(&self) -> usize {
+    match self {
+      NativeType::Void => 0,
+      NativeType::U8 | NativeType::I8 => 1,
+      NativeType::U16 | NativeType::I16 => 2,
+      NativeType::U32 | NativeType::I32 | NativeType::F32 => 4,
+      NativeType::U64 | NativeType::I64 | NativeType::F64 => 8,
+      NativeType::USize
+      | NativeType::ISize
+      | NativeType::Pointer
+      | NativeType::Function => std::mem::size_of::<usize>(),
+      NativeType::Struct(fields) => NativeType::compute_struct_size(fields),
+    }
+  }
+
+  fn compute_struct_size(fields: &[NativeType]) -> usize {
+    let mut size = 0;
+    for field in fields {
+      size += field.get_size();
+    }
+    size
+  }
 }
 
 impl From<NativeType> for libffi::middle::Type {
@@ -258,6 +284,9 @@ impl From<NativeType> for libffi::middle::Type {
       NativeType::F64 => libffi::middle::Type::f64(),
       NativeType::Pointer => libffi::middle::Type::pointer(),
       NativeType::Function => libffi::middle::Type::pointer(),
+      NativeType::Struct(fields) => libffi::middle::Type::structure(
+        fields.iter().map(|field| field.clone().into()),
+      ),
     }
   }
 }
@@ -280,6 +309,8 @@ union NativeValue {
   f32_value: f32,
   f64_value: f64,
   pointer: *const u8,
+  structure: *const u8,
+  structure_value: std::mem::ManuallyDrop<Vec<u8>>,
 }
 
 impl NativeValue {
@@ -299,6 +330,7 @@ impl NativeValue {
       NativeType::F32 => Arg::new(&self.f32_value),
       NativeType::F64 => Arg::new(&self.f64_value),
       NativeType::Pointer | NativeType::Function => Arg::new(&self.pointer),
+      NativeType::Struct(_) => Arg::new(&*self.structure),
     }
   }
 
@@ -328,6 +360,9 @@ impl NativeValue {
       NativeType::F64 => Value::from(self.f64_value),
       NativeType::Pointer | NativeType::Function => {
         json!(U32x2::from(self.pointer as u64))
+      }
+      NativeType::Struct(_) => {
+        json!(self.structure_value.to_vec())
       }
     }
   }
@@ -407,6 +442,18 @@ impl NativeValue {
       NativeType::Pointer | NativeType::Function => {
         let local_value: v8::Local<v8::Value> =
           v8::BigInt::new_from_u64(scope, self.pointer as u64).into();
+        local_value.into()
+      }
+      NativeType::Struct(_) => {
+        let store = v8::ArrayBuffer::new_backing_store_from_vec(
+          self.structure_value.to_vec(),
+        );
+        let ab =
+          v8::ArrayBuffer::with_backing_store(scope, &store.make_shared());
+        let local_value: v8::Local<v8::Value> =
+          v8::Uint8Array::new(scope, ab, 0, ab.byte_length())
+            .unwrap()
+            .into();
         local_value.into()
       }
     }
@@ -583,13 +630,14 @@ where
             ))),
           }?;
         let ptr = libffi::middle::CodePtr::from_ptr(fn_ptr as _);
+        let result_type = foreign_fn.result.clone();
         let cif = libffi::middle::Cif::new(
           foreign_fn
             .parameters
             .clone()
             .into_iter()
             .map(libffi::middle::Type::from),
-          foreign_fn.result.into(),
+          result_type.into(),
         );
 
         let func_key = v8::String::new(scope, &symbol_key).unwrap();
@@ -638,10 +686,11 @@ fn make_sync_fn<'s>(
       // SAFETY: The pointer will not be deallocated until the function is
       // garbage collected.
       let symbol = unsafe { &*(external.value() as *const Symbol) };
+      let result_type = symbol.result_type.clone();
       match ffi_call_sync(scope, args, symbol) {
         Ok(result) => {
           // SAFETY: Same return type declared to libffi; trust user to have it right beyond that.
-          let result = unsafe { result.to_v8(scope, symbol.result_type) };
+          let result = unsafe { result.to_v8(scope, result_type) };
           rv.set(result.v8_value);
         }
         Err(err) => {
@@ -822,6 +871,32 @@ where
           ffi_args.push(NativeValue { pointer });
         } else {
           return Err(type_error("Invalid FFI pointer type, expected null, BigInt, ArrayBuffer, or ArrayBufferView"));
+        }
+      }
+      NativeType::Struct(_) => {
+        if let Ok(value) = v8::Local::<v8::ArrayBufferView>::try_from(value) {
+          let byte_offset = value.byte_offset();
+          let backing_store = value
+            .buffer(scope)
+            .ok_or_else(|| {
+              type_error(
+                "Invalid FFI ArrayBufferView, expected data in the buffer",
+              )
+            })?
+            .get_backing_store();
+          let pointer = if byte_offset > 0 {
+            &backing_store[byte_offset..] as *const _ as *const u8
+          } else {
+            &backing_store[..] as *const _ as *const u8
+          };
+          ffi_args.push(NativeValue { structure: pointer });
+        } else if let Ok(value) = v8::Local::<v8::ArrayBuffer>::try_from(value)
+        {
+          let backing_store = value.get_backing_store();
+          let pointer = &backing_store[..] as *const _ as *const u8;
+          ffi_args.push(NativeValue { structure: pointer });
+        } else {
+          return Err(type_error("Invalid FFI structure type, expected ArrayBuffer, or ArrayBufferView"));
         }
       }
       NativeType::Function => {
@@ -1015,6 +1090,36 @@ where
           return Err(type_error("Invalid FFI pointer type, expected null, BigInt, ArrayBuffer, or ArrayBufferView"));
         }
       }
+      NativeType::Struct(_) => {
+        if let Ok(value) = v8::Local::<v8::ArrayBufferView>::try_from(value) {
+          let byte_offset = value.byte_offset();
+          let backing_store = value
+            .buffer(scope)
+            .ok_or_else(|| {
+              type_error(
+                "Invalid FFI ArrayBufferView, expected data in the buffer",
+              )
+            })?
+            .get_backing_store();
+          let pointer = if byte_offset > 0 {
+            &backing_store[byte_offset..] as *const _ as *const u8
+          } else {
+            &backing_store[..] as *const _ as *const u8
+          };
+
+          ffi_args.push(NativeValue { structure: pointer });
+        } else if let Ok(value) = v8::Local::<v8::ArrayBuffer>::try_from(value)
+        {
+          let backing_store = value.get_backing_store();
+          let pointer = &backing_store[..] as *const _ as *const u8;
+
+          ffi_args.push(NativeValue { structure: pointer });
+        } else {
+          return Err(type_error(
+            "Invalid structure type, expected ArrayBuffer, or ArrayBufferView",
+          ));
+        }
+      }
       NativeType::Function => {
         if value.is_null() {
           let value: *const u8 = ptr::null();
@@ -1030,7 +1135,14 @@ where
       }
     }
   }
-  let call_args: Vec<Arg> = ffi_args.iter().map(Arg::new).collect();
+  let call_args: Vec<Arg> = ffi_args
+    .iter()
+    .enumerate()
+    .map(|(index, ffi_arg)| {
+      // SAFETY: the union field is initialized
+      unsafe { ffi_arg.as_arg(parameter_types.get(index).unwrap().clone()) }
+    })
+    .collect();
   // SAFETY: types in the `Cif` match the actual calling convention and
   // types of symbol.
   unsafe {
@@ -1077,6 +1189,19 @@ where
       NativeType::Pointer | NativeType::Function => NativeValue {
         pointer: cif.call::<*const u8>(*fun_ptr, &call_args),
       },
+      NativeType::Struct(fields) => {
+        let size = NativeType::compute_struct_size(fields);
+        let mut result = vec![0u8; size];
+        libffi::raw::ffi_call(
+          symbol.cif.as_raw_ptr(),
+          Some(*symbol.ptr.as_safe_fun()),
+          result.as_mut_ptr() as *mut c_void,
+          call_args.as_ptr() as *mut *mut c_void,
+        );
+        NativeValue {
+          structure_value: std::mem::ManuallyDrop::new(result),
+        }
+      }
     })
   }
 }
@@ -1093,7 +1218,7 @@ fn ffi_call(
     .enumerate()
     .map(|(index, ffi_arg)| {
       // SAFETY: the union field is initialized
-      unsafe { ffi_arg.as_arg(*parameter_types.get(index).unwrap()) }
+      unsafe { ffi_arg.as_arg(parameter_types.get(index).unwrap().clone()) }
     })
     .collect();
 
@@ -1143,6 +1268,19 @@ fn ffi_call(
       NativeType::Pointer | NativeType::Function => NativeValue {
         pointer: cif.call::<*const u8>(fun_ptr, &call_args),
       },
+      NativeType::Struct(fields) => {
+        let size = NativeType::compute_struct_size(&fields);
+        let mut result = vec![0u8; size];
+        libffi::raw::ffi_call(
+          cif.as_raw_ptr(),
+          Some(*fun_ptr.as_safe_fun()),
+          result.as_mut_ptr() as *mut c_void,
+          call_args.as_ptr() as *mut *mut c_void,
+        );
+        NativeValue {
+          structure_value: std::mem::ManuallyDrop::new(result),
+        }
+      }
     })
   }
 }
@@ -1538,12 +1676,14 @@ where
   let symbol = PtrSymbol::new(pointer, &def);
   let call_args = ffi_parse_args(scope, parameters, &def.parameters)?;
 
+  let result_type = def.result.clone();
+
   let result = ffi_call(
     call_args,
     &symbol.cif,
     symbol.ptr,
     &def.parameters,
-    def.result,
+    result_type,
   )?;
   // SAFETY: Same return type declared to libffi; trust user to have it right beyond that.
   let result = unsafe { result.to_v8(scope, def.result) };
@@ -1581,6 +1721,8 @@ where
   let symbol = PtrSymbol::new(pointer, &def);
   let call_args = ffi_parse_args(scope, parameters, &def.parameters)?;
 
+  let result_def = def.result.clone();
+
   let join_handle = tokio::task::spawn_blocking(move || {
     let PtrSymbol { cif, ptr } = symbol.clone();
     ffi_call(call_args, &cif, ptr, &def.parameters, def.result)
@@ -1591,7 +1733,7 @@ where
       .await
       .map_err(|err| anyhow!("Nonblocking FFI call failed: {}", err))??;
     // SAFETY: Same return type declared to libffi; trust user to have it right beyond that.
-    Ok(unsafe { result.to_value(def.result) })
+    Ok(unsafe { result.to_value(result_def) })
   })
 }
 
@@ -1693,7 +1835,7 @@ fn op_ffi_get_static<'scope>(
       let number: v8::Local<v8::Value> = v8::Number::new(scope, result).into();
       number.into()
     }
-    NativeType::Pointer | NativeType::Function => {
+    NativeType::Pointer | NativeType::Function | NativeType::Struct(_) => {
       let result = data_ptr as u64;
       let big_int: v8::Local<v8::Value> =
         v8::BigInt::new_from_u64(scope, result).into();
@@ -1723,7 +1865,7 @@ fn op_ffi_call_nonblocking<'scope>(
 
   let call_args = ffi_parse_args(scope, parameters, &symbol.parameter_types)?;
 
-  let result_type = symbol.result_type;
+  let result_type = symbol.result_type.clone();
   let join_handle = tokio::task::spawn_blocking(move || {
     let Symbol {
       cif,
