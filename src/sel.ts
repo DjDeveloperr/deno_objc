@@ -2,10 +2,10 @@ import sys from "./bindings.ts";
 import { _handle, toCString } from "./util.ts";
 
 export class Sel {
-  [_handle]: bigint;
+  [_handle]: Deno.UnsafePointer;
 
-  constructor(handle: bigint | string | Sel) {
-    this[_handle] = typeof handle === "bigint"
+  constructor(handle: Deno.UnsafePointer | string | Sel) {
+    this[_handle] = handle instanceof Deno.UnsafePointer
       ? handle
       : handle instanceof Sel
       ? handle[_handle]

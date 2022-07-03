@@ -3,9 +3,9 @@ import { _handle } from "./util.ts";
 
 /** Represents an instance variable on class */
 export class Ivar {
-  [_handle]: bigint;
+  [_handle]: Deno.UnsafePointer;
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.UnsafePointer) {
     this[_handle] = handle;
   }
 

@@ -7,9 +7,9 @@ export interface PropertyAttribute {
 }
 
 export class Property {
-  [_handle]: bigint;
+  [_handle]: Deno.UnsafePointer;
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.UnsafePointer) {
     this[_handle] = handle;
   }
 
@@ -21,7 +21,7 @@ export class Property {
 
   get attributes() {
     const ptr = sys.property_getAttributes(this[_handle]);
-    if (ptr === 0n) return undefined;
+    if (ptr.value === 0n) return undefined;
     const ptrView = new Deno.UnsafePointerView(ptr);
     return ptrView.getCString();
   }
@@ -29,12 +29,12 @@ export class Property {
   getAttributeList() {
     const outCount = new Uint32Array(1);
     const ptr = sys.property_copyAttributeList(this[_handle], outCount);
-    if (ptr === 0n) return undefined;
+    if (ptr.value === 0n) return undefined;
     const ptrView = new Deno.UnsafePointerView(ptr);
     const attributes = new Array<PropertyAttribute>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
-      const name = ptrView.getBigUint64(i * 16);
-      const value = ptrView.getBigUint64(i * 16 + 8);
+      const name = new Deno.UnsafePointer(ptrView.getBigUint64(i * 16));
+      const value = new Deno.UnsafePointer(ptrView.getBigUint64(i * 16 + 8));
       attributes[i] = {
         name: new Deno.UnsafePointerView(name).getCString(),
         value: new Deno.UnsafePointerView(value).getCString(),
@@ -45,7 +45,7 @@ export class Property {
 
   getAttributeValue(name: string) {
     const ptr = sys.property_copyAttributeValue(this[_handle], toCString(name));
-    if (ptr === 0n) return undefined;
+    if (ptr.value === 0n) return undefined;
     const ptrView = new Deno.UnsafePointerView(ptr);
     return ptrView.getCString();
   }
