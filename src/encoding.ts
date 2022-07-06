@@ -539,12 +539,16 @@ export function fromNative(enc: CTypeInfo, v: any) {
       if (v === null || v.value === 0n) {
         return null;
       } else if (enc.type === "pointer" || enc.type === "unknown") {
+        if (v === 0n) return null;
         return v;
       } else if (enc.type === "id") {
+        if (v === 0n) return null;
         return new CObject(v);
       } else if (enc.type === "class") {
+        if (v === 0n) return null;
         return new Class(v);
       } else if (enc.type === "sel") {
+        if (v === 0n) return null;
         return new Sel(v);
       } else if (enc.type === "struct") {
         return v;

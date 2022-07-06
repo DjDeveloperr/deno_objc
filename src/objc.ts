@@ -12,6 +12,7 @@ import { Sel } from "./sel.ts";
 import { _handle, _proxied, toCString } from "./util.ts";
 import { fromFileUrl } from "../deps.ts";
 import common from "./common.ts";
+import { Protocol } from "./protocol.ts";
 
 function toJS(c: any) {
   if (c instanceof Class || c instanceof CObject) {
@@ -213,6 +214,15 @@ export class ObjC {
     },
   });
 
+  static readonly protocols: Record<string, Protocol> = new Proxy({}, {
+    get: (_, name) => {
+      if (typeof name === "symbol") return;
+      const protocol = ObjC.getProtocol(name);
+      if (!protocol) return;
+      else return protocol;
+    },
+  });
+
   /** Returns the number of currently registered classes */
   static get classCount() {
     return sys.objc_getClassList(null, 0);
@@ -238,6 +248,14 @@ export class ObjC {
     const classPtr = sys.objc_getClass(nameCstr);
     if (classPtr === 0n) return undefined;
     return new Class(classPtr);
+  }
+
+  /** Get a registered class by its name */
+  static getProtocol(name: string): Protocol | undefined {
+    const nameCstr = toCString(name);
+    const classPtr = sys.objc_getProtocol(nameCstr);
+    if (classPtr === 0n) return undefined;
+    return new Protocol(classPtr);
   }
 
   // static get imageNames() {
