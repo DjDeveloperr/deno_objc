@@ -6,6 +6,10 @@ function NSMakeRect(x: number, y: number, width: number, height: number) {
   return new Float64Array([x, y, width, height]);
 }
 
+function NSMakeSize(width: number, height: number) {
+  return new Float64Array([width, height]);
+}
+
 const {
   NSObject,
   NSApplication,
@@ -13,6 +17,10 @@ const {
   NSDate,
   NSButton,
   NSTextField,
+  NSStatusBar,
+  NSPopover,
+  NSViewController,
+  NSView,
 } = objc.classes;
 
 const app = NSApplication.sharedApplication();
@@ -20,14 +28,45 @@ app.setActivationPolicy(0);
 
 const window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer(
   NSMakeRect(100, 100, 300, 300),
-  1 | 2 | 4 | 8,
+  1 | 2 | 4,
   2,
   0,
 );
 
+// try to make it floating window
+window.opaque = false
+window.level = 3
+
 let close = false;
 
 let btn1 = 0, btn2 = 0;
+
+const popoverView = NSView.alloc().initWithFrame(NSMakeRect(0, 0, 300, 300));
+
+const contentViewController = objc.createClass({
+  name: "ContentViewController",
+  superclass: NSViewController,
+  protocols: [],
+  methods: [
+    {
+      name: "loadView",
+      result: "void",
+      parameters: [],
+      fn() {
+        this.self.view = popoverView;
+      },
+    },
+  ]
+});
+
+const popover = NSPopover.alloc().init();
+popover.behavior = 1;
+popover.contentSize = NSMakeSize(200, 200);
+const cvc = contentViewController.proxy.alloc().initWithNibName_bundle_(null, null);
+popover.contentViewController = cvc;
+
+const bar = NSStatusBar.systemStatusBar().statusItemWithLength_(-1);
+bar.button.title = "Deno";
 
 const WindowDelegate = objc.createClass({
   name: "WindowDelegate",
@@ -70,10 +109,34 @@ const WindowDelegate = objc.createClass({
         label2.setStringValue("Button2 Clicked " + btn2 + " times");
       },
     },
+    {
+      name: "applicationDidFinishLaunching:",
+      parameters: ["id"],
+      result: "void",
+      fn(_notif) {
+        console.log("Launched 🚀");
+      },
+    },
+    {
+      name: "OnPopoverClick:",
+      parameters: ["id"],
+      result: "void",
+      fn(_sender) {
+        if (bar.button !== null) {
+          if (popover.shown) {
+            popover.performClose(_sender);
+          } else {
+            contentViewController.proxy.view.window?.becomeKey();
+            popover.showRelativeToRect_ofView_preferredEdge(bar.button.bounds, bar.button, 1);
+          }
+        }
+      },
+    },
   ],
 });
 
 const delegate = WindowDelegate.proxy.alloc().init();
+app.setDelegate(delegate);
 window.setDelegate(delegate);
 
 window.setTitle("Deno Obj-C");
@@ -108,12 +171,16 @@ label2.setBezeled(false);
 label2.setDrawsBackground(false);
 label2.setEditable(false);
 
+bar.button.setTarget(delegate);
+bar.button.setAction("OnPopoverClick:");
+
 window.contentView.addSubview(button1);
 window.contentView.addSubview(button2);
 window.contentView.addSubview(label1);
 window.contentView.addSubview(label2);
 
 app.activateIgnoringOtherApps(true);
+app.finishLaunching();
 
 function updateEvents() {
   while (true) {

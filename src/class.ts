@@ -303,6 +303,7 @@ export class Class {
       }`;
       cls.addMethod(new Sel(method.name), cb.pointer, enc);
     });
+    sys.objc_registerClassPair(cls.handle);
     return cls;
   }
 }

@@ -213,7 +213,7 @@ export class ObjC {
       else return createProxy(cls);
     },
   });
-
+  
   static readonly protocols: Record<string, Protocol> = new Proxy({}, {
     get: (_, name) => {
       if (typeof name === "symbol") return;
@@ -240,6 +240,20 @@ export class ObjC {
       classes[i] = new Class(ptr);
     }
     return classes;
+  }
+
+  /** Returns array of all currently registered classes */
+  static get protocolList() {
+    const outCount = new Uint32Array(1);
+    const ptrs = new Deno.UnsafePointerView(
+      sys.objc_copyProtocolList(outCount),
+    );
+    const protocols = new Array<Protocol>(outCount[0]);
+    for (let i = 0; i < outCount[0]; i++) {
+      const ptr = ptrs.getBigUint64(i * 8);
+      protocols[i] = new Protocol(ptr);
+    }
+    return protocols;
   }
 
   /** Get a registered class by its name */
