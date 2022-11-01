@@ -1,10 +1,16 @@
-import { CTypeEncodable, toNativeType, fromNative, toNative } from "./encoding.ts";
+import {
+  CTypeEncodable,
+  fromNative,
+  toNative,
+  toNativeType,
+} from "./encoding.ts";
 import { _handle } from "./util.ts";
 import { CObject } from "./object.ts";
 import common from "./common.ts";
 import { Class } from "./class.ts";
 
-const LE = (new Uint32Array((new Uint8Array([1, 2, 3, 4])).buffer))[0] === 0x04030201;
+const LE =
+  (new Uint32Array((new Uint8Array([1, 2, 3, 4])).buffer))[0] === 0x04030201;
 
 const {
   symbols: {
@@ -12,34 +18,39 @@ const {
     _Block_copy,
     _Block_release,
   },
-} = Deno.dlopen("libSystem.dylib", {
-  _NSConcreteStackBlock: {
-    type: "pointer",
-  },
+} = Deno.build.os === "darwin"
+  ? Deno.dlopen(
+    "libSystem.dylib",
+    {
+      _NSConcreteStackBlock: {
+        type: "pointer",
+      },
 
-  _Block_copy: {
-    parameters: ["pointer"],
-    result: "pointer",
-  },
+      _Block_copy: {
+        parameters: ["pointer"],
+        result: "pointer",
+      },
 
-  _Block_release: {
-    parameters: ["pointer"],
-    result: "void",
-  },
-} as const);
+      _Block_release: {
+        parameters: ["pointer"],
+        result: "void",
+      },
+    } as const,
+  )
+  : null as any;
 
 const copyHelper = new Deno.UnsafeCallback({
   parameters: ["pointer", "pointer"],
   result: "void",
 }, () => {
-  // console.log("copyHelper");
+  // noop
 });
 
 const disposeHelper = new Deno.UnsafeCallback({
   parameters: ["pointer"],
   result: "void",
 }, () => {
-  // console.log("disposeHelper");
+  // noop
 });
 
 export interface BlockOptions {
@@ -63,18 +74,22 @@ export class Block {
     const blockView = new DataView(this.inner.buffer);
 
     this.cb = new Deno.UnsafeCallback({
-      parameters: options.parameters.map((p) => toNativeType(p)) as Deno.NativeType[],
+      parameters: options.parameters.map((p) =>
+        toNativeType(p)
+      ) as Deno.NativeType[],
       result: toNativeType(options.result),
     }, (...args: any[]): any => {
-      const result = options.fn(...(args.map((e, i) => {
-        const v = fromNative(options.parameters[i], e);
-        if (
-          v !== null && typeof v === "object" &&
-          (v instanceof CObject || v instanceof Class)
-        ) {
-          return common.createProxy(v);
-        } else return v;
-      })));
+      const result = options.fn(
+        ...(args.map((e, i) => {
+          const v = fromNative(options.parameters[i], e);
+          if (
+            v !== null && typeof v === "object" &&
+            (v instanceof CObject || v instanceof Class)
+          ) {
+            return common.createProxy(v);
+          } else return v;
+        })),
+      );
       return toNative(options.result, result);
     });
 
@@ -87,7 +102,11 @@ export class Block {
     // 0x10: invoke
     blockView.setBigUint64(8 + 4 + 4, BigInt(this.cb.pointer), LE);
     // 0x18: desc
-    blockView.setBigUint64(8 + 4 + 4 + 8, BigInt(Deno.UnsafePointer.of(this.innerDesc)), LE);
+    blockView.setBigUint64(
+      8 + 4 + 4 + 8,
+      BigInt(Deno.UnsafePointer.of(this.innerDesc)),
+      LE,
+    );
 
     // 0x00: reserved
     blockDescView.setBigUint64(0, 0n, LE);

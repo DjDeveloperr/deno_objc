@@ -1,8 +1,7 @@
 {
   "tasks": {
     "test": "deno run -A --unstable --no-check ./test/test.ts",
-    "test-appkit": "./scripts/run_appkit_test",
-    "debug-appkit": "./scripts/run_appkit_debug",
+    "test-appkit": "deno run -A --unstable --no-check ./test/appkit.ts",
     "test-appkitx": "deno run -A --unstable --no-check ./test_appkit/main.tsx",
     "test-pasteboard": "deno test -A --unstable --no-check ./test/pasteboard.ts",
     "test-encoding": "deno test -A --unstable --no-check ./test/encoding.ts",

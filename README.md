@@ -13,8 +13,8 @@ const pasteboard = NSPasteboard.generalPasteboard();
 
 const result = pasteboard.stringForType("public.utf8-plain-text");
 // or
-const result = objc.send
-  `${pasteboard} stringForType:${"public.utf8-plain-text"}`;
+const result = objc
+  .send`${pasteboard} stringForType:${"public.utf8-plain-text"}`;
 
 // Convert to JS String
 console.log(result.UTF8String());

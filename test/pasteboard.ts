@@ -15,8 +15,8 @@ Deno.test("pasteboard", async (t) => {
   });
 
   await t.step("write string", () => {
-    objc.send
-      `${pb} setString:${"hello world"} forType:${"public.utf8-plain-text"}`;
+    objc
+      .send`${pb} setString:${"hello world"} forType:${"public.utf8-plain-text"}`;
     // or
     // pb.setString_forType("hello world", "public.utf8-plain-text");
   });
