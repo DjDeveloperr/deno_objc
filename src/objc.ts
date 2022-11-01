@@ -96,12 +96,12 @@ export function createProxy(self: Class | CObject) {
         } else if (prop.description === "Deno.customInspect") {
           return () => {
             try {
-              const desc = proxy.description();
+              const desc = proxy.description;
               return desc.UTF8String();
             } catch (_) {
               return self instanceof Class
                 ? `[class ${self.name}]`
-                : `[object ${self.className}]`;
+                : `[cobject ${self.className}]`;
             }
           };
         } else return (target as any)[prop];
@@ -213,7 +213,7 @@ export class ObjC {
       else return createProxy(cls);
     },
   });
-  
+
   static readonly protocols: Record<string, Protocol> = new Proxy({}, {
     get: (_, name) => {
       if (typeof name === "symbol") return;
@@ -232,7 +232,7 @@ export class ObjC {
   static get classList() {
     const outCount = new Uint32Array(1);
     const classPtrs = new Deno.UnsafePointerView(
-      sys.objc_copyClassList(outCount),
+      BigInt(sys.objc_copyClassList(outCount)),
     );
     const classes = new Array<Class>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
@@ -246,7 +246,7 @@ export class ObjC {
   static get protocolList() {
     const outCount = new Uint32Array(1);
     const ptrs = new Deno.UnsafePointerView(
-      sys.objc_copyProtocolList(outCount),
+      BigInt(sys.objc_copyProtocolList(outCount)),
     );
     const protocols = new Array<Protocol>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
@@ -260,7 +260,7 @@ export class ObjC {
   static getClass(name: string): Class | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getClass(nameCstr);
-    if (classPtr === 0n) return undefined;
+    if (classPtr === 0) return undefined;
     return new Class(classPtr);
   }
 
@@ -268,7 +268,7 @@ export class ObjC {
   static getProtocol(name: string): Protocol | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getProtocol(nameCstr);
-    if (classPtr === 0n) return undefined;
+    if (classPtr === 0) return undefined;
     return new Protocol(classPtr);
   }
 
@@ -328,7 +328,7 @@ export class ObjC {
     const retDefNative = toNativeType(retDef);
 
     const fn = new Deno.UnsafeFnPointer(
-      sys.objc_msgSend,
+      BigInt(sys.objc_msgSend),
       {
         parameters: argDefsNative as Deno.NativeType[],
         result: retDefNative,

@@ -2,10 +2,10 @@ import sys from "./bindings.ts";
 import { _handle, toCString } from "./util.ts";
 
 export class Sel {
-  [_handle]: bigint;
+  [_handle]: Deno.PointerValue;
 
-  constructor(handle: bigint | string | Sel) {
-    this[_handle] = typeof handle === "bigint"
+  constructor(handle: Deno.PointerValue | string | Sel) {
+    this[_handle] = typeof handle === "bigint" || typeof handle === "number"
       ? handle
       : handle instanceof Sel
       ? handle[_handle]
@@ -25,8 +25,7 @@ export class Sel {
 
   get name() {
     const ptr = sys.sel_getName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   equals(other: Sel) {

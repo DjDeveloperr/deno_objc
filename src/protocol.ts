@@ -2,16 +2,15 @@ import sys from "./bindings.ts";
 import { _handle } from "./util.ts";
 
 export class Protocol {
-  [_handle]: bigint;
+  [_handle]: Deno.PointerValue;
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.PointerValue) {
     this[_handle] = handle;
   }
 
   get name() {
     const ptr = sys.protocol_getName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   [Symbol.for("Deno.customInspect")]() {

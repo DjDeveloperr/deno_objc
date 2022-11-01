@@ -3,16 +3,15 @@ import { _handle } from "./util.ts";
 
 /** Represents an instance variable on class */
 export class Ivar {
-  [_handle]: bigint;
+  [_handle]: Deno.PointerValue;
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.PointerValue) {
     this[_handle] = handle;
   }
 
   get name() {
     const ptr = sys.ivar_getName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   get offset() {
@@ -21,8 +20,7 @@ export class Ivar {
 
   get typeEncoding() {
     const ptr = sys.ivar_getTypeEncoding(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   [Symbol.for("Deno.customInspect")]() {

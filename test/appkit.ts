@@ -1,6 +1,8 @@
-import objc from "../mod.ts";
+import objc, { Block } from "../mod.ts";
+import { _handle } from "../src/util.ts";
 
 objc.import("AppKit");
+objc.import("UserNotifications");
 
 function NSMakeRect(x: number, y: number, width: number, height: number) {
   return new Float64Array([x, y, width, height]);
@@ -21,6 +23,10 @@ const {
   NSPopover,
   NSViewController,
   NSView,
+  UNUserNotificationCenter,
+  UNMutableNotificationContent,
+  UNNotificationRequest,
+  UNTimeIntervalNotificationTrigger,
 } = objc.classes;
 
 const app = NSApplication.sharedApplication();
@@ -34,8 +40,8 @@ const window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer(
 );
 
 // try to make it floating window
-window.opaque = false
-window.level = 3
+window.opaque = false;
+window.level = 3;
 
 let close = false;
 
@@ -56,17 +62,30 @@ const contentViewController = objc.createClass({
         this.self.view = popoverView;
       },
     },
-  ]
+  ],
 });
 
 const popover = NSPopover.alloc().init();
 popover.behavior = 1;
 popover.contentSize = NSMakeSize(200, 200);
-const cvc = contentViewController.proxy.alloc().initWithNibName_bundle_(null, null);
+const cvc = contentViewController.proxy.alloc().initWithNibName_bundle_(
+  null,
+  null,
+);
 popover.contentViewController = cvc;
 
 const bar = NSStatusBar.systemStatusBar().statusItemWithLength_(-1);
 bar.button.title = "Deno";
+
+const {
+  symbols: {
+    _NSConcreteStackBlock,
+  },
+} = Deno.dlopen("libSystem.dylib", {
+  _NSConcreteStackBlock: {
+    type: "pointer",
+  },
+});
 
 const WindowDelegate = objc.createClass({
   name: "WindowDelegate",
@@ -115,6 +134,55 @@ const WindowDelegate = objc.createClass({
       result: "void",
       fn(_notif) {
         console.log("Launched 🚀");
+        const notificationCenter = UNUserNotificationCenter.alloc()
+          .initWithBundleIdentifier("xyz.helloyunho.appkit");
+
+        notificationCenter.getNotificationSettingsWithCompletionHandler(new Block({
+          parameters: ["id", "id"],
+          result: "void",
+          fn(_, settings) {
+            console.log(settings);
+          },
+        }));
+
+        const block = new Block({
+          parameters: ["id", "bool", "id"],
+          result: "void",
+          fn(_, granted: boolean, error: any) {
+            console.log("granted:", granted);
+            console.log("error:", error);
+
+            if (granted) {
+              const content = UNMutableNotificationContent.alloc().init();
+              content.title = "Deno";
+              content.body = "Deno is awesome";
+
+              const trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval_repeats(5, false);
+              
+              const request = UNNotificationRequest.requestWithIdentifier_content_trigger(
+                "xyz.helloyunho.appkit",
+                content,
+                trigger,
+              );
+              
+              notificationCenter.addNotificationRequest_withCompletionHandler(
+                request,
+                new Block({
+                  parameters: ["id", "id"],
+                  result: "void",
+                  fn(_, error: any) {
+                    console.log("req error:", objc.send`${error} description`.UTF8String());
+                  },
+                }),
+              );
+            }
+          },
+        });
+        
+        notificationCenter.requestAuthorizationWithOptions_completionHandler(
+          (1 << 0) | (1 << 1) | (1 << 2),
+          block,
+        );
       },
     },
     {
@@ -127,7 +195,11 @@ const WindowDelegate = objc.createClass({
             popover.performClose(_sender);
           } else {
             contentViewController.proxy.view.window?.becomeKey();
-            popover.showRelativeToRect_ofView_preferredEdge(bar.button.bounds, bar.button, 1);
+            popover.showRelativeToRect_ofView_preferredEdge(
+              bar.button.bounds,
+              bar.button,
+              1,
+            );
           }
         }
       },
@@ -198,10 +270,6 @@ function updateEvents() {
   }
 }
 
-const loop = setInterval(() => {
-  if (close) {
-    clearInterval(loop);
-    return;
-  }
+while (!close) {
   updateEvents();
-}, 1000 / 60);
+}

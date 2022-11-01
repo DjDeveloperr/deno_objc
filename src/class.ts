@@ -64,7 +64,7 @@ export interface ClassCreateOptions {
  * Represents an Objective-C class.
  */
 export class Class {
-  [_handle]: bigint;
+  [_handle]: Deno.PointerValue;
 
   get handle() {
     return this[_handle];
@@ -74,7 +74,7 @@ export class Class {
     return common.createProxy(this);
   }
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.PointerValue) {
     this[_handle] = handle;
   }
 
@@ -91,13 +91,12 @@ export class Class {
 
   get name() {
     const ptr = sys.class_getName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   get superclass(): Class | undefined {
     const superclass = sys.class_getSuperclass(this[_handle]);
-    if (superclass === 0n) {
+    if (superclass === 0) {
       return undefined;
     } else return new Class(superclass);
   }
@@ -118,20 +117,20 @@ export class Class {
 
   getInstanceMethod(sel: Sel) {
     const ptr = sys.class_getInstanceMethod(this[_handle], sel[_handle]);
-    if (ptr === 0n) return undefined;
+    if (ptr === 0) return undefined;
     else return new Method(ptr);
   }
 
   getClassMethod(sel: Sel) {
     const ptr = sys.class_getClassMethod(this[_handle], sel[_handle]);
-    if (ptr === 0n) return undefined;
+    if (ptr === 0) return undefined;
     else return new Method(ptr);
   }
 
   getInstanceVariable(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getInstanceVariable(this[_handle], nameCstr);
-    if (ptr === 0n) return undefined;
+    if (ptr === 0) return undefined;
     else return new Ivar(ptr);
   }
 
@@ -146,14 +145,14 @@ export class Class {
   getClassVariable(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getClassVariable(this[_handle], nameCstr);
-    if (ptr === 0n) return undefined;
+    if (ptr === 0) return undefined;
     else return new Ivar(ptr);
   }
 
   getProperty(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getProperty(this[_handle], nameCstr);
-    if (ptr === 0n) return undefined;
+    if (ptr === 0) return undefined;
     else return new Property(ptr);
   }
 
@@ -167,8 +166,8 @@ export class Class {
       CSTR_REFS.add(cstr2);
       CSTR_REFS.add(
         attrs[i] = new BigUint64Array([
-          Deno.UnsafePointer.of(cstr),
-          Deno.UnsafePointer.of(cstr2),
+          BigInt(Deno.UnsafePointer.of(cstr)),
+          BigInt(Deno.UnsafePointer.of(cstr2)),
         ]) as any,
       );
     }
@@ -177,15 +176,15 @@ export class Class {
         this[_handle],
         nameCstr,
         attrs.length === 0
-          ? 0n
-          : new BigUint64Array(attrs.map((e) => Deno.UnsafePointer.of(e))),
+          ? null
+          : new BigUint64Array(attrs.map((e) => BigInt(Deno.UnsafePointer.of(e)))),
         attrs.length,
       ),
     );
   }
 
   addMethod(sel: Sel, imp: bigint, types?: string) {
-    const typesCstr = types ? toCString(types) : 0n;
+    const typesCstr = types ? toCString(types) : null;
     return Boolean(
       sys.class_addMethod(this[_handle], sel[_handle], imp, typesCstr),
     );
@@ -198,7 +197,7 @@ export class Class {
   get instanceMethods() {
     const outCount = new Uint32Array(1);
     const methods = new Deno.UnsafePointerView(
-      sys.class_copyMethodList(this[_handle], outCount),
+      BigInt(sys.class_copyMethodList(this[_handle], outCount)),
     );
     const methodsArray = new Array<Method>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
@@ -212,7 +211,7 @@ export class Class {
   get instanceVariables() {
     const outCount = new Uint32Array(1);
     const ivars = new Deno.UnsafePointerView(
-      sys.class_copyIvarList(this[_handle], outCount),
+      BigInt(sys.class_copyIvarList(this[_handle], outCount)),
     );
     const ivarsArray = new Array<Ivar>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
@@ -226,7 +225,7 @@ export class Class {
   get properties() {
     const outCount = new Uint32Array(1);
     const props = new Deno.UnsafePointerView(
-      sys.class_copyPropertyList(this[_handle], outCount),
+      BigInt(sys.class_copyPropertyList(this[_handle], outCount)),
     );
     const propsArray = new Array<Property>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
@@ -276,7 +275,7 @@ export class Class {
           ],
           result: toNativeType(result),
         } as const,
-        (self: bigint, cmd: bigint, ...args: any[]): any => {
+        (self: Deno.PointerValue, cmd: Deno.PointerValue, ...args: any[]): any => {
           const obj = new CObject(self);
           const jsargs = args.map((e, i) => {
             const v = fromNative(params[i], e);
@@ -292,7 +291,7 @@ export class Class {
             pointer: self,
             object: obj,
             self: common.createProxy(obj),
-            view: new Deno.UnsafePointerView(self),
+            view: new Deno.UnsafePointerView(BigInt(self)),
             selector: new Sel(cmd),
           })(...jsargs);
           return toNative(result, res);

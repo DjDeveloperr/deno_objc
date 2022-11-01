@@ -28,7 +28,7 @@ const MyClass = objc.createClass({
       result: "int",
       fn() {
         return 1;
-      }
+      },
     },
     {
       name: "setIv:",
@@ -36,7 +36,7 @@ const MyClass = objc.createClass({
       result: "void",
       fn(iv: number) {
         console.log("set iv", iv);
-      }
+      },
     },
     {
       name: "test:",
@@ -45,7 +45,7 @@ const MyClass = objc.createClass({
       fn(obj: any) {
         console.log("test", obj.iv);
       },
-    }
+    },
   ],
 }).proxy;
 

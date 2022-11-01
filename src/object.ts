@@ -3,16 +3,15 @@ import { Class } from "./class.ts";
 import { _handle } from "./util.ts";
 
 export class CObject {
-  [_handle]: bigint;
+  [_handle]: Deno.PointerValue;
 
-  constructor(handle: bigint) {
+  constructor(handle: Deno.PointerValue) {
     this[_handle] = handle;
   }
 
   get className() {
     const ptr = sys.object_getClassName(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
-    return ptrView.getCString();
+    return Deno.UnsafePointerView.getCString(ptr);
   }
 
   get class() {

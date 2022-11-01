@@ -24,22 +24,22 @@ const SYMBOLS = {
   },
 
   class_getInstanceVariable: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer", // ig..? yes
   },
 
   class_getClassVariable: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
   class_addIvar: {
-    parameters: ["pointer", "pointer", "isize", "u8", "pointer"],
+    parameters: ["pointer", "buffer", "isize", "u8", "buffer"],
     result: "u8",
   },
 
   class_copyIvarList: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
@@ -64,17 +64,17 @@ const SYMBOLS = {
   },
 
   class_getProperty: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
   class_copyPropertyList: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
   class_addMethod: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"],
+    parameters: ["pointer", "pointer", "pointer", "buffer"],
     result: "u8",
   },
 
@@ -89,7 +89,7 @@ const SYMBOLS = {
   },
 
   class_copyMethodList: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
@@ -120,7 +120,7 @@ const SYMBOLS = {
   },
 
   class_addProperty: {
-    parameters: ["pointer", "pointer", "pointer", "u32"],
+    parameters: ["pointer", "buffer", "buffer", "u32"],
     result: "u8",
   },
 
@@ -152,7 +152,7 @@ const SYMBOLS = {
   // Adding Classes
 
   objc_allocateClassPair: {
-    parameters: ["pointer", "pointer", "isize"],
+    parameters: ["pointer", "buffer", "isize"],
     result: "pointer",
   },
 
@@ -206,22 +206,22 @@ const SYMBOLS = {
   // Obtaining Class Definitions
 
   objc_getClassList: {
-    parameters: ["pointer", "isize"],
+    parameters: ["buffer", "isize"],
     result: "i32",
   },
 
   objc_copyClassList: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
   objc_lookUpClass: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
   objc_getClass: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
@@ -351,12 +351,12 @@ const SYMBOLS = {
   },
 
   sel_registerName: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
   sel_getUid: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
@@ -368,12 +368,12 @@ const SYMBOLS = {
   // Working with Protocols
 
   objc_getProtocol: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
   objc_copyProtocolList: {
-    parameters: ["pointer"],
+    parameters: ["buffer"],
     result: "pointer",
   },
 
@@ -455,12 +455,12 @@ const SYMBOLS = {
   },
 
   property_copyAttributeValue: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 
   property_copyAttributeList: {
-    parameters: ["pointer", "pointer"],
+    parameters: ["pointer", "buffer"],
     result: "pointer",
   },
 

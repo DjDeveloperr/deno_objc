@@ -374,7 +374,12 @@ export function parseCType(source: string) {
   return parser.parse();
 }
 
-export function toNativeType(enc: CTypeInfo): Deno.NativeResultType {
+function encodableAsType(enc: CTypeEncodable): CTypeInfo {
+  return typeof enc === "string" ? ({ type: enc }) : enc;
+}
+
+export function toNativeType(enc: CTypeEncodable): Deno.NativeResultType {
+  enc = encodableAsType(enc);
   switch (enc.type) {
     case "char":
       return "u8";
@@ -405,7 +410,7 @@ export function toNativeType(enc: CTypeInfo): Deno.NativeResultType {
     case "void":
       return "void";
     case "string":
-      return "pointer";
+      return "buffer";
     case "id":
       return "pointer";
     case "class":
@@ -435,9 +440,11 @@ function expectNumber(v: any) {
   }
 }
 
-export function toNative(enc: CTypeInfo, v: any) {
+export function toNative(enc: CTypeEncodable, v: any) {
+  console.log("toNative", enc, v);
+  enc = encodableAsType(enc);
   switch (enc.type) {
-    case "char": { // u8
+    case "char": {
       if (typeof v === "string") {
         return v.charCodeAt(0);
       } else {
@@ -471,17 +478,26 @@ export function toNative(enc: CTypeInfo, v: any) {
     case "string": // pointer
       return toCString(v);
 
+    case "struct": {
+      if (isArrayBufferView(v)) {
+        return v as any;
+      } else {
+        throw new Error("Expected ArrayBufferView");
+      }
+    }
+
     case "id":
     case "class":
     case "sel":
     case "pointer":
     case "unknown":
-    case "array":
-    case "struct": {
+    case "array": {
       if (
-        v === null || typeof v === "bigint" || isArrayBufferView(v)
+        v === null || typeof v === "bigint" || typeof v === "number"
       ) {
         return v;
+      } else if (isArrayBufferView(v)) {
+        return Deno.UnsafePointer.of(v as any);
       } else if (enc.type === "sel" && typeof v === "string") {
         return new Sel(v)[_handle];
       } else if (typeof v === "object" && _handle in v) {
@@ -497,7 +513,8 @@ export function toNative(enc: CTypeInfo, v: any) {
   }
 }
 
-export function fromNative(enc: CTypeInfo, v: any) {
+export function fromNative(enc: CTypeEncodable, v: any) {
+  enc = encodableAsType(enc);
   switch (enc.type) {
     case "char": // u8
       return v;
@@ -536,19 +553,19 @@ export function fromNative(enc: CTypeInfo, v: any) {
     case "unknown":
     case "array":
     case "struct": {
-      if (v === null || v.value === 0n) {
+      if (v === null || v.value === 0) {
         return null;
       } else if (enc.type === "pointer" || enc.type === "unknown") {
-        if (v === 0n) return null;
+        if (v === 0) return null;
         return v;
       } else if (enc.type === "id") {
-        if (v === 0n) return null;
+        if (v === 0) return null;
         return new CObject(v);
       } else if (enc.type === "class") {
-        if (v === 0n) return null;
+        if (v === 0) return null;
         return new Class(v);
       } else if (enc.type === "sel") {
-        if (v === 0n) return null;
+        if (v === 0) return null;
         return new Sel(v);
       } else if (enc.type === "struct") {
         return v;
