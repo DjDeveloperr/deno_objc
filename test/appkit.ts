@@ -137,13 +137,15 @@ const WindowDelegate = objc.createClass({
         const notificationCenter = UNUserNotificationCenter.alloc()
           .initWithBundleIdentifier("xyz.helloyunho.appkit");
 
-        notificationCenter.getNotificationSettingsWithCompletionHandler(new Block({
-          parameters: ["id", "id"],
-          result: "void",
-          fn(_, settings) {
-            console.log(settings);
-          },
-        }));
+        notificationCenter.getNotificationSettingsWithCompletionHandler(
+          new Block({
+            parameters: ["id", "id"],
+            result: "void",
+            fn(_, settings) {
+              console.log(settings);
+            },
+          }),
+        );
 
         const block = new Block({
           parameters: ["id", "bool", "id"],
@@ -157,28 +159,33 @@ const WindowDelegate = objc.createClass({
               content.title = "Deno";
               content.body = "Deno is awesome";
 
-              const trigger = UNTimeIntervalNotificationTrigger.triggerWithTimeInterval_repeats(5, false);
-              
-              const request = UNNotificationRequest.requestWithIdentifier_content_trigger(
-                "xyz.helloyunho.appkit",
-                content,
-                trigger,
-              );
-              
+              const trigger = UNTimeIntervalNotificationTrigger
+                .triggerWithTimeInterval_repeats(5, false);
+
+              const request = UNNotificationRequest
+                .requestWithIdentifier_content_trigger(
+                  "xyz.helloyunho.appkit",
+                  content,
+                  trigger,
+                );
+
               notificationCenter.addNotificationRequest_withCompletionHandler(
                 request,
                 new Block({
                   parameters: ["id", "id"],
                   result: "void",
                   fn(_, error: any) {
-                    console.log("req error:", objc.send`${error} description`.UTF8String());
+                    console.log(
+                      "req error:",
+                      objc.send`${error} description`.UTF8String(),
+                    );
                   },
                 }),
               );
             }
           },
         });
-        
+
         notificationCenter.requestAuthorizationWithOptions_completionHandler(
           (1 << 0) | (1 << 1) | (1 << 2),
           block,

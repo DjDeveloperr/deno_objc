@@ -326,23 +326,6 @@ const SYMBOLS = {
     result: "void",
   },
 
-  // Working with Libraries
-
-  /*objc_copyImageNames: {
-  parameters: ["pointer"],
-  result: "pointer",
-},*/
-
-  /*class_getImageName: {
-  parameters: ["pointer"],
-  result: "pointer",
-},*/
-
-  /*objc_copyClassNamesForImage: {
-  parameters: ["pointer", "pointer"],
-  result: "pointer",
-},*/
-
   // Working with Selectors
 
   sel_getName: {
@@ -466,16 +449,6 @@ const SYMBOLS = {
 
   // Using Objective-C Language Features
 
-  /*objc_enumerationMutation: {
-  parameters: ["pointer"],
-  result: "void",
-},
-
-objc_setEnumerationMutationHandler: {
-  parameters: ["pointer"],
-  result: "void",
-},*/
-
   imp_implementationWithBlock: {
     parameters: ["pointer"],
     result: "pointer",
@@ -504,9 +477,6 @@ objc_setEnumerationMutationHandler: {
   objc_msgSend: {
     type: "pointer",
   },
-  /*objc_msgSendSuper: {
-    type: "pointer",
-  },*/
 } as const;
 
 /** Low-level Objective-C runtime bindings */

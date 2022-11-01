@@ -43,8 +43,8 @@ jobs:
       - name: Test Encoding
         run: deno task test-encoding
 
-      - name: Test AppKit
-        run: deno task test-appkit
+      # - name: Test AppKit
+      #   run: deno task test-appkit
 
       - name: Test Pasteboard
         run: deno task test-pasteboard

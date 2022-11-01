@@ -175,9 +175,9 @@ export class Class {
       sys.class_addProperty(
         this[_handle],
         nameCstr,
-        attrs.length === 0
-          ? null
-          : new BigUint64Array(attrs.map((e) => BigInt(Deno.UnsafePointer.of(e)))),
+        attrs.length === 0 ? null : new BigUint64Array(
+          attrs.map((e) => BigInt(Deno.UnsafePointer.of(e))),
+        ),
         attrs.length,
       ),
     );
@@ -275,7 +275,11 @@ export class Class {
           ],
           result: toNativeType(result),
         } as const,
-        (self: Deno.PointerValue, cmd: Deno.PointerValue, ...args: any[]): any => {
+        (
+          self: Deno.PointerValue,
+          cmd: Deno.PointerValue,
+          ...args: any[]
+        ): any => {
           const obj = new CObject(self);
           const jsargs = args.map((e, i) => {
             const v = fromNative(params[i], e);
