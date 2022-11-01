@@ -18,24 +18,26 @@ const {
     _Block_copy,
     _Block_release,
   },
-} = Deno.build.os === "darwin" ? Deno.dlopen(
-  "libSystem.dylib",
-  {
-    _NSConcreteStackBlock: {
-      type: "pointer",
-    },
+} = Deno.build.os === "darwin"
+  ? Deno.dlopen(
+    "libSystem.dylib",
+    {
+      _NSConcreteStackBlock: {
+        type: "pointer",
+      },
 
-    _Block_copy: {
-      parameters: ["pointer"],
-      result: "pointer",
-    },
+      _Block_copy: {
+        parameters: ["pointer"],
+        result: "pointer",
+      },
 
-    _Block_release: {
-      parameters: ["pointer"],
-      result: "void",
-    },
-  } as const,
-) : null as any;
+      _Block_release: {
+        parameters: ["pointer"],
+        result: "void",
+      },
+    } as const,
+  )
+  : null as any;
 
 const copyHelper = new Deno.UnsafeCallback({
   parameters: ["pointer", "pointer"],
