@@ -478,6 +478,7 @@ export function toNative(enc: CTypeEncodable, v: any) {
     case "string": // pointer
       return toCString(v);
 
+    case "array":
     case "struct": {
       if (isArrayBufferView(v)) {
         return v as any;
@@ -490,8 +491,7 @@ export function toNative(enc: CTypeEncodable, v: any) {
     case "class":
     case "sel":
     case "pointer":
-    case "unknown":
-    case "array": {
+    case "unknown": {
       if (
         v === null || typeof v === "bigint" || typeof v === "number"
       ) {
