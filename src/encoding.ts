@@ -441,7 +441,6 @@ function expectNumber(v: any) {
 }
 
 export function toNative(enc: CTypeEncodable, v: any) {
-  console.log("toNative", enc, v);
   enc = encodableAsType(enc);
   switch (enc.type) {
     case "char": {
