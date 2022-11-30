@@ -190,6 +190,13 @@ export class Class {
     );
   }
 
+  replaceMethod(sel: Sel, imp: Deno.PointerValue, types?: string) {
+    const typesCstr = types ? toCString(types) : null;
+    return Boolean(
+      sys.class_replaceMethod(this[_handle], sel[_handle], imp, typesCstr),
+    );
+  }
+
   addProtocol(protocol: Protocol) {
     return Boolean(sys.class_addProtocol(this[_handle], protocol[_handle]));
   }
