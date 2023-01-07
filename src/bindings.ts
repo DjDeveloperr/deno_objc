@@ -94,7 +94,7 @@ const SYMBOLS = {
   },
 
   class_replaceMethod: {
-    parameters: ["pointer", "pointer", "pointer", "pointer"],
+    parameters: ["pointer", "pointer", "pointer", "buffer"],
     result: "u8",
   },
 
@@ -476,6 +476,18 @@ const SYMBOLS = {
 
   objc_msgSend: {
     type: "pointer",
+  },
+
+  // Autorelease Pool
+
+  objc_autoreleasePoolPush: {
+    parameters: [],
+    result: "pointer",
+  },
+
+  objc_autoreleasePoolPop: {
+    parameters: ["pointer"],
+    result: "void",
   },
 } as const;
 

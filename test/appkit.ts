@@ -77,16 +77,6 @@ popover.contentViewController = cvc;
 const bar = NSStatusBar.systemStatusBar().statusItemWithLength_(-1);
 bar.button.title = "Deno";
 
-const {
-  symbols: {
-    _NSConcreteStackBlock,
-  },
-} = Deno.dlopen("libSystem.dylib", {
-  _NSConcreteStackBlock: {
-    type: "pointer",
-  },
-});
-
 const WindowDelegate = objc.createClass({
   name: "WindowDelegate",
   superclass: NSObject,

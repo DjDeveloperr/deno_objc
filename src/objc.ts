@@ -13,6 +13,7 @@ import { _handle, _proxied, toCString } from "./util.ts";
 import { fromFileUrl } from "../deps.ts";
 import common from "./common.ts";
 import { Protocol } from "./protocol.ts";
+import { autoreleasepool } from "./autoreleasePool.ts";
 
 function toJS(c: any) {
   if (c instanceof Class || c instanceof CObject) {
@@ -194,6 +195,8 @@ common.createProxy = createProxy;
  *   `NSString["stringWithUTF8String:"](...)`.
  */
 export class ObjC {
+  static readonly autoreleasepool = autoreleasepool;
+
   /**
    * A proxy that gives access to all loaded classes via JS properties.
    *

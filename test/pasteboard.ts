@@ -7,9 +7,9 @@ const {
   NSPasteboard,
 } = objc.classes;
 
-const pb = NSPasteboard.generalPasteboard();
-
 Deno.test("pasteboard", async (t) => {
+  const pb = NSPasteboard.generalPasteboard();
+
   await t.step("clear contents", () => {
     pb.clearContents();
   });

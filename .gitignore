@@ -2,3 +2,4 @@ test.dylib
 .vscode/
 build/
 deno/
+deno.lock

@@ -12,3 +12,4 @@ export * from "./src/object.ts";
 export * from "./src/protocol.ts";
 export * from "./src/sel.ts";
 export * from "./src/block.ts";
+export * from "./src/autoreleasePool.ts";

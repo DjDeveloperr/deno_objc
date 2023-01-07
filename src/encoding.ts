@@ -448,7 +448,7 @@ export function toNative(enc: CTypeEncodable, v: any) {
         return v.charCodeAt(0);
       } else {
         expectNumber(v);
-        return v;
+        return Number(v);
       }
     }
 
