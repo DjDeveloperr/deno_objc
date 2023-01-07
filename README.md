@@ -9,7 +9,7 @@
 Objective-C Runtime Bridge for Deno.
 
 ```ts
-import objc from "https://deno.land/x/objc@0.0.1/mod.ts";
+import objc from "https://deno.land/x/objc@0.1.0/mod.ts";
 
 objc.import("AppKit");
 
@@ -38,8 +38,19 @@ If you want to override that, use `DENO_OBJC_PATH` env variable.
 
 ## API
 
-Objective-C runtime is mainly used via message sending. In Obj-C, take the
-following method:
+To retrieve a class, use `objc.classes`:
+
+```ts
+const { NSPasteboard } = objc.classes;
+```
+
+To retrieve a protocol, use `objc.protocols`:
+
+```ts
+const { NSPasteboardReading } = objc.protocols;
+```
+
+In Obj-C, take the following method:
 
 ```cpp
 - (void)setString:(NSString *)string;
