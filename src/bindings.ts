@@ -478,6 +478,11 @@ const SYMBOLS = {
     type: "pointer",
   },
 
+  objc_msgSend_stret: {
+    name: Deno.build.arch === "aarch64" ? "objc_msgSend" : "objc_msgSend_stret",
+    type: "pointer",
+  },
+
   // Autorelease Pool
 
   objc_autoreleasePoolPush: {

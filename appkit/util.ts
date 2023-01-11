@@ -82,11 +82,11 @@ export function updateEvents() {
 
 export const controller = new AbortController();
 
-export function mainloop() {
-  const loop = setInterval(() => {
-    if (controller.signal.aborted) return clearInterval(loop);
-    updateEvents();
-  }, 1000 / 60);
+export function mainloop(innerCallback?: () => void) {
   NSApp.activateIgnoringOtherApps(true);
   NSApp.finishLaunching();
+  while (!controller.signal.aborted) {
+    innerCallback?.();
+    updateEvents();
+  }
 }

@@ -3,6 +3,7 @@ import { Class, ClassCreateOptions } from "./class.ts";
 import {
   CTypeInfo,
   fromNative,
+  getCTypeSize,
   parseCType,
   toNative,
   toNativeType,
@@ -329,12 +330,19 @@ export class ObjC {
 
     const argDefsNative = argDefs.map(toNativeType);
     const retDefNative = toNativeType(retDef);
+    const retSize = getCTypeSize(retDef);
+
+    const isStret = Deno.build.arch !== "aarch64" && retSize > 8;
+    if (isStret) {
+      argDefsNative.unshift("buffer");
+    }
+    const stret = isStret ? new Uint8Array(retSize) : undefined;
 
     const fn = new Deno.UnsafeFnPointer(
-      BigInt(sys.objc_msgSend),
+      isStret ? sys.objc_msgSend_stret : sys.objc_msgSend,
       {
         parameters: argDefsNative as Deno.NativeType[],
-        result: retDefNative,
+        result: isStret ? "void" : retDefNative,
       } as const,
     );
 
@@ -360,6 +368,12 @@ export class ObjC {
         return toNative(def, e);
       }),
     ];
+
+    if (isStret) {
+      cargs.unshift(stret);
+      (fn.call as any)(...cargs);
+      return stret! as any;
+    }
 
     return toJS(fromNative(retDef, (fn.call as any)(...cargs)));
   }
