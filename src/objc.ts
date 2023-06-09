@@ -235,11 +235,11 @@ export class ObjC {
   static get classList() {
     const outCount = new Uint32Array(1);
     const classPtrs = new Deno.UnsafePointerView(
-      BigInt(sys.objc_copyClassList(outCount)),
+      sys.objc_copyClassList(outCount)!,
     );
     const classes = new Array<Class>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
-      const ptr = classPtrs.getBigUint64(i * 8);
+      const ptr = classPtrs.getPointer(i * 8);
       classes[i] = new Class(ptr);
     }
     return classes;
@@ -249,11 +249,11 @@ export class ObjC {
   static get protocolList() {
     const outCount = new Uint32Array(1);
     const ptrs = new Deno.UnsafePointerView(
-      BigInt(sys.objc_copyProtocolList(outCount)),
+      sys.objc_copyProtocolList(outCount)!,
     );
     const protocols = new Array<Protocol>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
-      const ptr = ptrs.getBigUint64(i * 8);
+      const ptr = ptrs.getPointer(i * 8);
       protocols[i] = new Protocol(ptr);
     }
     return protocols;
@@ -263,7 +263,7 @@ export class ObjC {
   static getClass(name: string): Class | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getClass(nameCstr);
-    if (classPtr === 0) return undefined;
+    if (classPtr === null) return undefined;
     return new Class(classPtr);
   }
 
@@ -271,7 +271,7 @@ export class ObjC {
   static getProtocol(name: string): Protocol | undefined {
     const nameCstr = toCString(name);
     const classPtr = sys.objc_getProtocol(nameCstr);
-    if (classPtr === 0) return undefined;
+    if (classPtr === null) return undefined;
     return new Protocol(classPtr);
   }
 
@@ -291,7 +291,7 @@ export class ObjC {
   /** Send a message (call class/instance method) to class/instance. */
   static msgSend<T = any>(
     obj: any,
-    selector: string | bigint | Sel,
+    selector: string | Deno.PointerValue | Sel,
     ...args: any[]
   ): T {
     const sel = new Sel(selector);
@@ -331,11 +331,11 @@ export class ObjC {
     const retDefNative = toNativeType(retDef);
 
     const fn = new Deno.UnsafeFnPointer(
-      BigInt(sys.objc_msgSend),
+      sys.objc_msgSend!,
       {
         parameters: argDefsNative as Deno.NativeType[],
         result: retDefNative,
-      } as const,
+      } as any,
     );
 
     const cargs = [

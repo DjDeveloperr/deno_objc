@@ -11,7 +11,7 @@ export class CObject {
 
   get className() {
     const ptr = sys.object_getClassName(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   get class() {

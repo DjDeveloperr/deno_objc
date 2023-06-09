@@ -29,7 +29,7 @@ export interface ClassMethodThis {
   self: any;
   view: Deno.UnsafePointerView;
   object: CObject;
-  pointer: Deno.UnsafePointer;
+  pointer: Deno.PointerValue;
   selector: Sel;
 }
 
@@ -82,7 +82,7 @@ export class Class {
     const nameCstr = toCString(name);
     return new Class(
       sys.objc_allocateClassPair(
-        superclass?.[_handle] ?? 0n,
+        superclass?.[_handle] ?? null,
         nameCstr,
         extraBytes ?? 0,
       ),
@@ -91,12 +91,12 @@ export class Class {
 
   get name() {
     const ptr = sys.class_getName(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   get superclass(): Class | undefined {
     const superclass = sys.class_getSuperclass(this[_handle]);
-    if (superclass === 0) {
+    if (superclass === null) {
       return undefined;
     } else return new Class(superclass);
   }
@@ -117,20 +117,20 @@ export class Class {
 
   getInstanceMethod(sel: Sel) {
     const ptr = sys.class_getInstanceMethod(this[_handle], sel[_handle]);
-    if (ptr === 0) return undefined;
+    if (ptr === null) return undefined;
     else return new Method(ptr);
   }
 
   getClassMethod(sel: Sel) {
     const ptr = sys.class_getClassMethod(this[_handle], sel[_handle]);
-    if (ptr === 0) return undefined;
+    if (ptr === null) return undefined;
     else return new Method(ptr);
   }
 
   getInstanceVariable(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getInstanceVariable(this[_handle], nameCstr);
-    if (ptr === 0) return undefined;
+    if (ptr === null) return undefined;
     else return new Ivar(ptr);
   }
 
@@ -145,14 +145,14 @@ export class Class {
   getClassVariable(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getClassVariable(this[_handle], nameCstr);
-    if (ptr === 0) return undefined;
+    if (ptr === null) return undefined;
     else return new Ivar(ptr);
   }
 
   getProperty(name: string) {
     const nameCstr = toCString(name);
     const ptr = sys.class_getProperty(this[_handle], nameCstr);
-    if (ptr === 0) return undefined;
+    if (ptr === null) return undefined;
     else return new Property(ptr);
   }
 
@@ -166,8 +166,8 @@ export class Class {
       CSTR_REFS.add(cstr2);
       CSTR_REFS.add(
         attrs[i] = new BigUint64Array([
-          BigInt(Deno.UnsafePointer.of(cstr)),
-          BigInt(Deno.UnsafePointer.of(cstr2)),
+          BigInt(Deno.UnsafePointer.value(Deno.UnsafePointer.of(cstr))),
+          BigInt(Deno.UnsafePointer.value(Deno.UnsafePointer.of(cstr2))),
         ]) as any,
       );
     }
@@ -176,7 +176,9 @@ export class Class {
         this[_handle],
         nameCstr,
         attrs.length === 0 ? null : new BigUint64Array(
-          attrs.map((e) => BigInt(Deno.UnsafePointer.of(e))),
+          attrs.map((e) =>
+            BigInt(Deno.UnsafePointer.value(Deno.UnsafePointer.of(e)))
+          ),
         ),
         attrs.length,
       ),
@@ -204,12 +206,12 @@ export class Class {
   get instanceMethods() {
     const outCount = new Uint32Array(1);
     const methods = new Deno.UnsafePointerView(
-      BigInt(sys.class_copyMethodList(this[_handle], outCount)),
+      sys.class_copyMethodList(this[_handle], outCount)!,
     );
     const methodsArray = new Array<Method>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
       methodsArray[i] = new Method(
-        methods.getBigUint64(i * 8),
+        methods.getPointer(i * 8),
       );
     }
     return methodsArray;
@@ -218,12 +220,12 @@ export class Class {
   get instanceVariables() {
     const outCount = new Uint32Array(1);
     const ivars = new Deno.UnsafePointerView(
-      BigInt(sys.class_copyIvarList(this[_handle], outCount)),
+      sys.class_copyIvarList(this[_handle], outCount)!,
     );
     const ivarsArray = new Array<Ivar>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
       ivarsArray[i] = new Ivar(
-        ivars.getBigUint64(i * 8),
+        ivars.getPointer(i * 8),
       );
     }
     return ivarsArray;
@@ -232,12 +234,12 @@ export class Class {
   get properties() {
     const outCount = new Uint32Array(1);
     const props = new Deno.UnsafePointerView(
-      BigInt(sys.class_copyPropertyList(this[_handle], outCount)),
+      sys.class_copyPropertyList(this[_handle], outCount)!,
     );
     const propsArray = new Array<Property>(outCount[0]);
     for (let i = 0; i < outCount[0]; i++) {
       propsArray[i] = new Property(
-        props.getBigUint64(i * 8),
+        props.getPointer(i * 8),
       );
     }
     return propsArray;
@@ -281,7 +283,7 @@ export class Class {
             ...params.map((e) => toNativeType(e)) as Deno.NativeType[],
           ],
           result: toNativeType(result),
-        } as const,
+        } as any,
         (
           self: Deno.PointerValue,
           cmd: Deno.PointerValue,
@@ -302,7 +304,7 @@ export class Class {
             pointer: self,
             object: obj,
             self: common.createProxy(obj),
-            view: new Deno.UnsafePointerView(BigInt(self)),
+            view: new Deno.UnsafePointerView(self!),
             selector: new Sel(cmd),
           })(...jsargs);
           return toNative(result, res);

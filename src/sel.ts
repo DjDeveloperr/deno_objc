@@ -5,11 +5,12 @@ export class Sel {
   [_handle]: Deno.PointerValue;
 
   constructor(handle: Deno.PointerValue | string | Sel) {
-    this[_handle] = typeof handle === "bigint" || typeof handle === "number"
-      ? handle
-      : handle instanceof Sel
-      ? handle[_handle]
-      : Sel.register(handle)[_handle];
+    this[_handle] =
+      typeof handle === "object" && Object.getPrototypeOf(handle) === null
+        ? handle as Deno.PointerValue
+        : handle instanceof Sel
+        ? handle[_handle]
+        : Sel.register(handle as string)[_handle];
   }
 
   static register(name: string) {
@@ -25,7 +26,7 @@ export class Sel {
 
   get name() {
     const ptr = sys.sel_getName(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   equals(other: Sel) {

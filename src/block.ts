@@ -35,7 +35,7 @@ const {
         parameters: ["pointer"],
         result: "void",
       },
-    } as const,
+    } as any,
   )
   : null as any;
 
@@ -78,7 +78,7 @@ export class Block {
         toNativeType(p)
       ) as Deno.NativeType[],
       result: toNativeType(options.result),
-    }, (...args: any[]): any => {
+    } as any, (...args: any[]): any => {
       const result = options.fn(
         ...(args.map((e, i) => {
           const v = fromNative(options.parameters[i], e);
@@ -94,17 +94,25 @@ export class Block {
     });
 
     // 0x00: class/isa
-    blockView.setBigUint64(0, BigInt(_NSConcreteStackBlock), LE);
+    blockView.setBigUint64(
+      0,
+      BigInt(Deno.UnsafePointer.value(_NSConcreteStackBlock)),
+      LE,
+    );
     // 0x08: flags
     blockView.setInt32(8, 1 << 25, LE);
     // 0x0c: reserved
     blockView.setInt32(8 + 4, 0, LE);
     // 0x10: invoke
-    blockView.setBigUint64(8 + 4 + 4, BigInt(this.cb.pointer), LE);
+    blockView.setBigUint64(
+      8 + 4 + 4,
+      BigInt(Deno.UnsafePointer.value(this.cb.pointer)),
+      LE,
+    );
     // 0x18: desc
     blockView.setBigUint64(
       8 + 4 + 4 + 8,
-      BigInt(Deno.UnsafePointer.of(this.innerDesc)),
+      BigInt(Deno.UnsafePointer.value(Deno.UnsafePointer.of(this.innerDesc))),
       LE,
     );
 
@@ -113,9 +121,17 @@ export class Block {
     // 0x08: size
     blockDescView.setBigUint64(8, BigInt(this.inner.byteLength), LE);
     // 0x10: copy
-    blockDescView.setBigUint64(8 + 8, BigInt(copyHelper.pointer), LE);
+    blockDescView.setBigUint64(
+      8 + 8,
+      BigInt(Deno.UnsafePointer.value(copyHelper.pointer)),
+      LE,
+    );
     // 0x18: dispose
-    blockDescView.setBigUint64(8 + 8 + 8, BigInt(disposeHelper.pointer), LE);
+    blockDescView.setBigUint64(
+      8 + 8 + 8,
+      BigInt(Deno.UnsafePointer.value(disposeHelper.pointer)),
+      LE,
+    );
   }
 
   copy() {
@@ -126,7 +142,7 @@ export class Block {
     _Block_release(this[_handle]);
     this.inner = new Uint8Array(0);
     this.innerDesc = new Uint8Array(0);
-    this[_handle] = 0n;
+    this[_handle] = null;
     this.cb.close();
   }
 }

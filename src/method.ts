@@ -18,13 +18,13 @@ export class Method {
 
   get returnType() {
     const ptr = sys.method_copyReturnType(this[_handle]);
-    const ptrView = new Deno.UnsafePointerView(ptr);
+    const ptrView = new Deno.UnsafePointerView(ptr!);
     return ptrView.getCString();
   }
 
   getArgumentType(index: number) {
     const ptr = sys.method_copyArgumentType(this[_handle], index);
-    if (ptr === 0) return "";
+    if (ptr === null) return "";
     const ptrView = new Deno.UnsafePointerView(ptr);
     return ptrView.getCString();
   }

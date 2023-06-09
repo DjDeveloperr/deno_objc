@@ -11,7 +11,7 @@ export class Ivar {
 
   get name() {
     const ptr = sys.ivar_getName(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   get offset() {
@@ -20,7 +20,7 @@ export class Ivar {
 
   get typeEncoding() {
     const ptr = sys.ivar_getTypeEncoding(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   [Symbol.for("Deno.customInspect")]() {

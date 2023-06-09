@@ -10,7 +10,7 @@ export class Protocol {
 
   get name() {
     const ptr = sys.protocol_getName(this[_handle]);
-    return Deno.UnsafePointerView.getCString(ptr);
+    return Deno.UnsafePointerView.getCString(ptr!);
   }
 
   [Symbol.for("Deno.customInspect")]() {

@@ -16,7 +16,6 @@ const {
   NSObject,
   NSApplication,
   NSWindow,
-  NSDate,
   NSButton,
   NSTextField,
   NSStatusBar,
@@ -40,8 +39,8 @@ const window = NSWindow.alloc().initWithContentRect_styleMask_backing_defer(
 );
 
 // try to make it floating window
-window.opaque = false;
-window.level = 3;
+// window.opaque = false;
+// window.level = 3;
 
 let close = false;
 
@@ -98,6 +97,7 @@ const WindowDelegate = objc.createClass({
       fn(_notif) {
         console.log("windowWillClose");
         close = true;
+        app.terminate(null);
       },
     },
     {
@@ -251,22 +251,24 @@ window.contentView.addSubview(label2);
 app.activateIgnoringOtherApps(true);
 app.finishLaunching();
 
-function updateEvents() {
-  while (true) {
-    const event = app.nextEventMatchingMask_untilDate_inMode_dequeue(
-      2n ** 64n - 1n,
-      NSDate.distantPast(),
-      "kCFRunLoopDefaultMode",
-      true,
-    );
-    if (event) {
-      app.sendEvent(event);
-    } else {
-      break;
-    }
-  }
-}
+app.run();
 
-while (!close) {
-  updateEvents();
-}
+// function updateEvents() {
+//   while (true) {
+//     const event = app.nextEventMatchingMask_untilDate_inMode_dequeue(
+//       2n ** 64n - 1n,
+//       NSDate.distantPast(),
+//       "kCFRunLoopDefaultMode",
+//       true,
+//     );
+//     if (event) {
+//       app.sendEvent(event);
+//     } else {
+//       break;
+//     }
+//   }
+// }
+
+// while (!close) {
+//   updateEvents();
+// }
